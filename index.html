@@ -2,12 +2,14 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <!-- Penting untuk tampilan HP -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game Petualangan Ikan</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="wrapper">
-    <h1>Petualangan Ikan </h1>
+    <h1>Petualangan Ikan Biru</h1>
 
     <div id="hud">
       <div class="hud-group">
@@ -35,13 +37,35 @@
 
     <canvas id="game" width="960" height="540"></canvas>
 
+    <!-- KONTROL HP (D-PAD + PAUSE) -->
+    <div id="mobileControls">
+      <div id="dpad" class="control-block">
+        <div></div>
+        <button class="btn-dir" data-key="w">▲</button>
+        <div></div>
+
+        <button class="btn-dir" data-key="a">◀</button>
+        <div></div>
+        <button class="btn-dir" data-key="d">▶</button>
+
+        <div></div>
+        <button class="btn-dir" data-key="s">▼</button>
+        <div></div>
+      </div>
+
+      <div id="mobileButtons" class="control-block">
+        <button id="mobilePauseBtn">Pause</button>
+      </div>
+    </div>
+
     <!-- PANEL MENU -->
     <div id="menuPanel" class="panel">
       <h2>Selamat Datang!</h2>
       <p>
-        Gerakkan ikan  dengan <b>WASD</b> atau <b>tombol panah</b>.<br>
-        Kumpulkan <b>mutiara emas</b> untuk menambah skor dan<br>
-        hindari <b>ranjau laut</b> dan <b>ubur-ubur beracun</b>!
+        Gerakkan ikan biru dengan <b>WASD</b>, <b>tombol panah</b>,<br>
+        atau <b>D-pad di layar HP</b>.<br><br>
+        Kumpulkan <b>mutiara emas</b> dan hindari<br>
+        <b>ranjau laut</b> &amp; <b>ubur-ubur beracun</b>!
       </p>
       <div class="panel-actions">
         <button id="startBtn">Mulai Game</button>
@@ -65,7 +89,8 @@
       <h2>Pause</h2>
       <p>
         Game sedang di-pause.<br>
-        Tekan tombol <b>P</b> atau klik tombol di bawah untuk lanjut.
+        Tekan tombol <b>P</b>, tombol <b>Pause</b>,<br>
+        atau <b>Pause di HP</b> untuk lanjut.
       </p>
       <div class="panel-actions">
         <button id="resumeBtn">Lanjut</button>
