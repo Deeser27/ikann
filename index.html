@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Game Petualangan Ikan</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrapper">
+    <h1>Petualangan Ikan Biru</h1>
+
+    <div id="hud">
+      <div class="hud-group">
+        <div class="hud-row">
+          <span class="hud-label">Skor</span>
+          <span id="scoreValue">0</span>
+        </div>
+        <div class="hud-row">
+          <span class="hud-label">Level</span>
+          <span id="levelValue">1</span>
+        </div>
+      </div>
+
+      <div class="hud-group">
+        <div id="healthBar">
+          <div id="healthBarInner"></div>
+        </div>
+        <span id="healthText">100 / 100</span>
+      </div>
+
+      <div class="hud-group">
+        <button id="pauseBtn">Pause (P)</button>
+      </div>
+    </div>
+
+    <canvas id="game" width="960" height="540"></canvas>
+
+    <!-- PANEL MENU -->
+    <div id="menuPanel" class="panel">
+      <h2>Selamat Datang!</h2>
+      <p>
+        Gerakkan ikan biru dengan <b>WASD</b> atau <b>tombol panah</b>.<br>
+        Kumpulkan <b>mutiara emas</b> untuk menambah skor dan<br>
+        hindari <b>ranjau laut</b> dan <b>ubur-ubur beracun</b>!
+      </p>
+      <div class="panel-actions">
+        <button id="startBtn">Mulai Game</button>
+      </div>
+    </div>
+
+    <!-- PANEL GAME OVER -->
+    <div id="gameOverPanel" class="panel hidden">
+      <h2>Game Over</h2>
+      <p>
+        Skor akhir kamu: <b><span id="finalScore">0</span></b><br>
+        Coba lagi untuk mendapatkan skor yang lebih tinggi!
+      </p>
+      <div class="panel-actions">
+        <button id="retryBtn">Main Lagi</button>
+      </div>
+    </div>
+
+    <!-- PANEL PAUSE -->
+    <div id="pausePanel" class="panel hidden">
+      <h2>Pause</h2>
+      <p>
+        Game sedang di-pause.<br>
+        Tekan tombol <b>P</b> atau klik tombol di bawah untuk lanjut.
+      </p>
+      <div class="panel-actions">
+        <button id="resumeBtn">Lanjut</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
