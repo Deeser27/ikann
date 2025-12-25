@@ -19,6 +19,10 @@ const retryBtn = document.getElementById("retryBtn");
 const resumeBtn = document.getElementById("resumeBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 
+// elemen kontrol HP
+const mobilePauseBtn = document.getElementById("mobilePauseBtn");
+const dirButtons = document.querySelectorAll(".btn-dir");
+
 // Gambar ikan
 const fishImg = new Image();
 fishImg.src = "fish.png"; // pastikan file ini ada di folder yang sama
@@ -71,7 +75,7 @@ const hazards = [];
 const bubbles = [];
 const bgRocks = [];
 
-// --- INPUT ---
+// --- INPUT KEYBOARD ---
 window.addEventListener("keydown", handleKeyDown);
 window.addEventListener("keyup", handleKeyUp);
 
@@ -124,6 +128,33 @@ function handleKeyUp(e) {
   }
 }
 
+// --- INPUT TOUCH / POINTER UNTUK HP ---
+
+// helper set state key
+function setVirtualKey(key, pressed) {
+  keys[key] = pressed;
+}
+
+dirButtons.forEach((btn) => {
+  const key = btn.dataset.key; // "w", "a", "s", "d"
+
+  const down = (e) => {
+    e.preventDefault();
+    setVirtualKey(key, true);
+  };
+
+  const up = (e) => {
+    e.preventDefault();
+    setVirtualKey(key, false);
+  };
+
+  btn.addEventListener("pointerdown", down);
+  btn.addEventListener("pointerup", up);
+  btn.addEventListener("pointercancel", up);
+  btn.addEventListener("pointerleave", up);
+  btn.addEventListener("pointerout", up);
+});
+
 // --- TOMBOL UI ---
 startBtn.addEventListener("click", () => {
   resetGame();
@@ -142,6 +173,13 @@ resumeBtn.addEventListener("click", () => {
 pauseBtn.addEventListener("click", () => {
   togglePause();
 });
+
+// pause dari HP
+if (mobilePauseBtn) {
+  mobilePauseBtn.addEventListener("click", () => {
+    togglePause();
+  });
+}
 
 // --- FUNGSI STATE ---
 
@@ -490,7 +528,10 @@ function updateGame(dt) {
   // Gelembung dari ekor ikan
   if (bubbleTimer >= 0.06) {
     bubbleTimer = 0;
-    spawnBubble(player.x - player.width / 2, player.y + (Math.random() * 12 - 6));
+    spawnBubble(
+      player.x - player.width / 2,
+      player.y + (Math.random() * 12 - 6)
+    );
   }
 
   // Gelembung dari dasar laut
