@@ -18,6 +18,7 @@ const startBtn = document.getElementById("startBtn");
 const retryBtn = document.getElementById("retryBtn");
 const resumeBtn = document.getElementById("resumeBtn");
 const pauseBtn = document.getElementById("pauseBtn");
+const muteBtn = document.getElementById("muteBtn");
 
 // Kontrol mobile
 const mobilePauseBtn = document.getElementById("mobilePauseBtn");
@@ -30,6 +31,67 @@ const skillSlowBtn = document.getElementById("skillSlow");
 // Gambar ikan
 const fishImg = new Image();
 fishImg.src = "fish.png"; // pastikan file ini ada di folder yang sama
+
+// --- SFX & MUSIC ---
+// Helper untuk buat audio
+function makeAudio(src, volume = 0.7, playbackRate = 1) {
+  const a = new Audio(src);
+  a.volume = volume;
+  a.playbackRate = playbackRate;
+  a.preload = "auto";
+  return a;
+}
+
+const sfx = {
+  coin: makeAudio("sfx_coin.wav", 0.7, 1.1),
+  hitMine: makeAudio("sfx_mine.wav", 0.75, 1),
+  hitJelly: makeAudio("sfx_jelly.wav", 0.7, 1),
+  dash: makeAudio("sfx_dash.wav", 0.8, 1.1),
+  shieldOn: makeAudio("sfx_shield.wav", 0.8, 1),
+  slowOn: makeAudio("sfx_slow.wav", 0.8, 0.95),
+};
+
+function playSfx(audio) {
+  if (!audio) return;
+  try {
+    const clone = audio.cloneNode();
+    clone.volume = audio.volume;
+    clone.playbackRate = audio.playbackRate;
+    clone.play().catch(() => {});
+  } catch (e) {
+    // ignore
+  }
+}
+
+// Musik background
+const bgMusic = makeAudio("bg_music.mp3", 0.35, 1);
+bgMusic.loop = true;
+
+let musicMuted = false;
+
+function playBgMusic() {
+  if (musicMuted) return;
+  try {
+    bgMusic.currentTime = 0;
+    bgMusic.play().catch(() => {});
+  } catch (e) {
+    // ignore
+  }
+}
+
+function stopBgMusic() {
+  try {
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+  } catch (e) {
+    // ignore
+  }
+}
+
+function updateMuteButtonUI() {
+  if (!muteBtn) return;
+  muteBtn.textContent = musicMuted ? "Unmute Musik" : "Mute Musik";
+}
 
 // --- STATE GAME ---
 const STATE = {
@@ -61,9 +123,9 @@ let globalTime = 0;
 const joystick = {
   active: false,
   pointerId: null,
-  dirX: 0, // arah (unit vector)
+  dirX: 0,
   dirY: 0,
-  strength: 0, // 0..1: seberapa jauh dari tengah (analog feel)
+  strength: 0, // 0..1
 };
 
 // Skill system
@@ -74,7 +136,6 @@ const skills = {
 };
 
 // --- OBJEK GAME ---
-
 const player = {
   x: canvas.width * 0.2,
   y: canvas.height / 2,
@@ -140,9 +201,9 @@ function handleKeyDown(e) {
     e.preventDefault();
     resetGame();
     setState(STATE.PLAYING);
+    playBgMusic();
   }
 
-  // skill dengan keyboard
   if (key === "j") {
     e.preventDefault();
     attemptDash();
@@ -178,7 +239,7 @@ function handleKeyUp(e) {
 
 // --- JOYSTICK ANALOG (MOBILE) ---
 if (joystickBase && joystickKnob) {
-  const opts = { passive: false }; // supaya preventDefault() bekerja
+  const opts = { passive: false };
 
   joystickBase.addEventListener("pointerdown", onJoystickDown, opts);
   joystickBase.addEventListener("pointermove", onJoystickMove, opts);
@@ -228,10 +289,9 @@ function updateJoystick(e) {
   let dx = x - cx;
   let dy = y - cy;
 
-  const maxDist = rect.width * 0.4; // radius joystick
+  const maxDist = rect.width * 0.4;
   let dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-  // clamp jarak ke lingkaran
   if (dist > maxDist) {
     dx = (dx / dist) * maxDist;
     dy = (dy / dist) * maxDist;
@@ -240,15 +300,14 @@ function updateJoystick(e) {
 
   const strength = Math.min(1, dist / maxDist);
 
-  // kalau dekat banget ke tengah, dianggap netral
   if (strength < 0.1) {
     joystick.dirX = 0;
     joystick.dirY = 0;
     joystick.strength = 0;
   } else {
-    joystick.dirX = dx / dist; // unit vector
+    joystick.dirX = dx / dist;
     joystick.dirY = dy / dist;
-    joystick.strength = strength; // 0..1 analog feel
+    joystick.strength = strength;
   }
 
   const knobX = cx + dx;
@@ -266,14 +325,12 @@ function resetJoystickKnob() {
   joystickKnob.style.top = `${cy}px`;
 }
 
-// --- BIND TOMBOL MOBILE DENGAN POINTERDOWN (SUPPORT MULTI-TOUCH) ---
-
+// --- BUTTON BINDER (MOBILE) ---
 function bindMobileButton(btn, handler) {
   if (!btn) return;
 
   const opts = { passive: false };
 
-  // untuk HP (multi-touch)
   btn.addEventListener(
     "pointerdown",
     (e) => {
@@ -283,7 +340,6 @@ function bindMobileButton(btn, handler) {
     opts
   );
 
-  // fallback untuk desktop/mouse
   btn.addEventListener("click", (e) => {
     e.preventDefault();
     handler();
@@ -291,14 +347,17 @@ function bindMobileButton(btn, handler) {
 }
 
 // --- TOMBOL UI ---
+// Start game
 startBtn.addEventListener("click", () => {
   resetGame();
   setState(STATE.PLAYING);
+  playBgMusic();
 });
 
 retryBtn.addEventListener("click", () => {
   resetGame();
   setState(STATE.PLAYING);
+  playBgMusic();
 });
 
 resumeBtn.addEventListener("click", () => {
@@ -309,18 +368,38 @@ pauseBtn.addEventListener("click", () => {
   togglePause();
 });
 
-// Mobile pause pakai pointerdown juga
+// Mobile pause
 if (mobilePauseBtn) {
   bindMobileButton(mobilePauseBtn, togglePause);
 }
 
-// Skill buttons (HP) pakai pointerdown (multi-touch)
+// Skill buttons mobile
 bindMobileButton(skillDashBtn, attemptDash);
 bindMobileButton(skillShieldBtn, attemptShield);
 bindMobileButton(skillSlowBtn, attemptSlow);
 
-// --- FUNGSI STATE ---
+// Mute button
+if (muteBtn) {
+  muteBtn.addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      musicMuted = !musicMuted;
+      bgMusic.muted = musicMuted;
 
+      // kalau unmute saat game lagi jalan dan musik sedang pause, nyalakan
+      if (!musicMuted && currentState === STATE.PLAYING && bgMusic.paused) {
+        playBgMusic();
+      }
+
+      updateMuteButtonUI();
+    },
+    { passive: false }
+  );
+  updateMuteButtonUI();
+}
+
+// --- STATE FUNCTIONS ---
 function setState(newState) {
   currentState = newState;
   updatePanels();
@@ -362,6 +441,7 @@ function togglePause(forceResume) {
 function gameOver() {
   setState(STATE.GAMEOVER);
   finalScoreEl.textContent = Math.floor(score);
+  stopBgMusic(); // berhenti saat kalah
 }
 
 function resetGame() {
@@ -387,7 +467,6 @@ function resetGame() {
   bubbleTimer = 0;
   backgroundBubbleTimer = 0;
 
-  // reset skills
   skills.dash.timer = 0;
   skills.shield.timer = 0;
   skills.shield.active = false;
@@ -402,8 +481,7 @@ function resetGame() {
   updateSkillUI();
 }
 
-// --- HEALTH BAR ---
-
+// --- HEALTH & DAMAGE ---
 function updateHealthBar() {
   const ratio = player.health / player.maxHealth;
   const clamped = Math.max(0, Math.min(1, ratio));
@@ -428,14 +506,13 @@ function damagePlayer(amount) {
 
   let finalDamage = amount;
 
-  // shield mengurangi damage
   if (skills.shield.active) {
-    finalDamage *= 0.3; // 70% ditahan shield
+    finalDamage *= 0.3;
   }
 
   player.health -= finalDamage;
   if (player.health < 0) player.health = 0;
-  player.invincibleTimer = 0.4; // sejenak kedap-kedip
+  player.invincibleTimer = 0.4;
   updateHealthBar();
 
   if (player.health <= 0) {
@@ -443,15 +520,13 @@ function damagePlayer(amount) {
   }
 }
 
-// --- SKILL LOGIC ---
-
+// --- SKILLS ---
 function attemptDash() {
   if (skills.dash.timer > 0 || currentState !== STATE.PLAYING) return;
 
   let dirX = joystick.dirX;
   let dirY = joystick.dirY;
 
-  // kalau joystick netral, pakai input keyboard
   if (dirX === 0 && dirY === 0) {
     if (keys["arrowleft"] || keys["a"]) dirX = -1;
     else if (keys["arrowright"] || keys["d"]) dirX = 1;
@@ -459,7 +534,6 @@ function attemptDash() {
     else if (keys["arrowdown"] || keys["s"]) dirY = 1;
   }
 
-  // kalau masih netral, pakai arah gerak terakhir, fallback ke kanan
   if (dirX === 0 && dirY === 0) {
     const speed = Math.hypot(player.vx, player.vy);
     if (speed > 10) {
@@ -475,10 +549,10 @@ function attemptDash() {
   player.vx += dirX * dashPower;
   player.vy += dirY * dashPower;
 
-  // invincible sebentar saat dash
   player.invincibleTimer = Math.max(player.invincibleTimer, 0.6);
   skills.dash.timer = skills.dash.cooldown;
 
+  playSfx(sfx.dash);
   flashSkillButton(skillDashBtn);
   updateSkillUI();
 }
@@ -495,6 +569,7 @@ function attemptShield() {
   skills.shield.remaining = skills.shield.duration;
   skills.shield.timer = skills.shield.cooldown;
 
+  playSfx(sfx.shieldOn);
   flashSkillButton(skillShieldBtn);
   updateSkillUI();
 }
@@ -511,12 +586,12 @@ function attemptSlow() {
   skills.slow.remaining = skills.slow.duration;
   skills.slow.timer = skills.slow.cooldown;
 
+  playSfx(sfx.slowOn);
   flashSkillButton(skillSlowBtn);
   updateSkillUI();
 }
 
 function updateSkills(dt) {
-  // cooldown
   for (const key of ["dash", "shield", "slow"]) {
     if (skills[key].timer > 0) {
       skills[key].timer -= dt;
@@ -524,7 +599,6 @@ function updateSkills(dt) {
     }
   }
 
-  // durasi aktif
   if (skills.shield.active) {
     skills.shield.remaining -= dt;
     if (skills.shield.remaining <= 0) {
@@ -573,11 +647,8 @@ function updateSkillButton(btn, cooldown, active, label) {
     btn.textContent = label;
   }
 
-  if (active) {
-    btn.classList.add("active-skill");
-  } else {
-    btn.classList.remove("active-skill");
-  }
+  if (active) btn.classList.add("active-skill");
+  else btn.classList.remove("active-skill");
 }
 
 function flashSkillButton(btn) {
@@ -587,7 +658,6 @@ function flashSkillButton(btn) {
 }
 
 // --- BACKGROUND PARALLAX ---
-
 function initBackground() {
   bgRocks.length = 0;
   for (let i = 0; i < 8; i++) {
@@ -618,7 +688,6 @@ function updateBackground(dt) {
 }
 
 // --- BUBBLES ---
-
 function spawnBubble(x, y) {
   bubbles.push({
     x,
@@ -644,7 +713,6 @@ function updateBubbles(dt) {
 }
 
 // --- COINS & HAZARDS ---
-
 function createCoin() {
   const marginY = 70;
   return {
@@ -672,6 +740,7 @@ function updateCoins(dt) {
     if (rectsIntersect(player, c)) {
       coinsCollected++;
       score += 35;
+      playSfx(sfx.coin);
       coins.splice(i, 1);
     }
   }
@@ -726,6 +795,9 @@ function updateHazards(dt) {
     }
 
     if (rectsIntersect(player, h)) {
+      if (h.type === "mine") playSfx(sfx.hitMine);
+      else playSfx(sfx.hitJelly);
+
       damagePlayer(h.damage);
       hazards.splice(i, 1);
     }
@@ -733,21 +805,17 @@ function updateHazards(dt) {
 }
 
 // --- PLAYER ---
-
 function updatePlayer(dt) {
   let ax = 0;
   let ay = 0;
 
-  // input keyboard (digital)
   if (keys["arrowup"] || keys["w"]) ay -= player.accel;
   if (keys["arrowdown"] || keys["s"]) ay += player.accel;
   if (keys["arrowleft"] || keys["a"]) ax -= player.accel;
   if (keys["arrowright"] || keys["d"]) ax += player.accel;
 
-  // input dari joystick analog (analog feel)
   if (joystick.strength > 0) {
-    // strength 0..1 -> akselerasi & maxSpeed naik pelan2
-    const analogAccelFactor = 0.35 + 0.9 * joystick.strength; // 0.35x sampai 1.25x
+    const analogAccelFactor = 0.35 + 0.9 * joystick.strength;
     ax += joystick.dirX * player.accel * analogAccelFactor;
     ay += joystick.dirY * player.accel * analogAccelFactor;
   }
@@ -755,11 +823,9 @@ function updatePlayer(dt) {
   player.vx += ax * dt;
   player.vy += ay * dt;
 
-  // batasi kecepatan berdasarkan analog strength
   let maxSpeed = player.maxSpeed;
   if (joystick.strength > 0) {
-    // analog: setengah stick = lambat, full = lebih kencang dikit
-    const speedFactor = 0.4 + 0.9 * joystick.strength; // 0.4..1.3x
+    const speedFactor = 0.4 + 0.9 * joystick.strength;
     maxSpeed = player.maxSpeed * speedFactor;
   }
 
@@ -770,7 +836,6 @@ function updatePlayer(dt) {
     player.vy *= scale;
   }
 
-  // friction
   player.vx *= player.friction;
   player.vy *= player.friction;
 
@@ -780,7 +845,6 @@ function updatePlayer(dt) {
   const halfW = player.width / 2;
   const halfH = player.height / 2;
 
-  // batas canvas
   if (player.x - halfW < 0) {
     player.x = halfW;
     player.vx = 0;
@@ -804,7 +868,6 @@ function updatePlayer(dt) {
 }
 
 // --- COLLISION ---
-
 function rectsIntersect(a, b) {
   const dx = Math.abs(a.x - b.x);
   const dy = Math.abs(a.y - b.y);
@@ -812,12 +875,10 @@ function rectsIntersect(a, b) {
 }
 
 // --- UPDATE & LOOP ---
-
 function updateGame(dt, worldDt) {
-  // progression
   elapsed += dt;
   distance += worldSpeed * worldDt;
-  const difficulty = 1 + elapsed / 20; // tiap 20 detik naik
+  const difficulty = 1 + elapsed / 20;
   level = Math.min(10, Math.floor(difficulty));
   worldSpeed = 160 + difficulty * 40;
 
@@ -839,7 +900,6 @@ function updateGame(dt, worldDt) {
     hazards.push(createHazard());
   }
 
-  // gelembung dari ekor ikan
   if (bubbleTimer >= 0.06) {
     bubbleTimer = 0;
     spawnBubble(
@@ -848,7 +908,6 @@ function updateGame(dt, worldDt) {
     );
   }
 
-  // gelembung dari dasar laut
   if (backgroundBubbleTimer >= 0.3) {
     backgroundBubbleTimer = 0;
     spawnBubble(Math.random() * canvas.width, canvas.height + 10);
@@ -858,7 +917,6 @@ function updateGame(dt, worldDt) {
   updateCoins(worldDt);
   updateHazards(worldDt);
 
-  // skor naik seiring waktu + level
   score += dt * (5 + level * 2);
   scoreEl.textContent = Math.floor(score);
   levelEl.textContent = level.toString();
@@ -877,7 +935,6 @@ function update(dt) {
   if (currentState === STATE.PLAYING) {
     updateGame(dt, worldDt);
   } else if (currentState === STATE.MENU) {
-    // animasi ikan pelan saat di menu
     const centerY = canvas.height / 2;
     player.x = canvas.width * 0.25 + Math.sin(globalTime) * 10;
     player.y = centerY + Math.sin(globalTime * 1.5) * 15;
@@ -898,7 +955,6 @@ function gameLoop(timestamp) {
 }
 
 // --- RENDER ---
-
 function drawBackground() {
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
   gradient.addColorStop(0, "#012a4a");
@@ -907,7 +963,6 @@ function drawBackground() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // cahaya dari atas
   ctx.save();
   ctx.globalAlpha = 0.15;
   ctx.fillStyle = "#ffffff";
@@ -924,13 +979,11 @@ function drawBackground() {
   }
   ctx.restore();
 
-  // dasar laut
   ctx.save();
   ctx.fillStyle = "#001219";
   ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
   ctx.restore();
 
-  // batu / karang (parallax)
   ctx.save();
   ctx.fillStyle = "#001b2e";
   for (const rock of bgRocks) {
@@ -994,13 +1047,12 @@ function drawHazards() {
     if (h.type === "mine") {
       ctx.save();
       ctx.translate(h.x, h.y);
-      // badan ranjau
+
       ctx.fillStyle = "#444";
       ctx.beginPath();
       ctx.arc(0, 0, h.width / 2, 0, Math.PI * 2);
       ctx.fill();
 
-      // duri
       ctx.strokeStyle = "#222";
       ctx.lineWidth = 2;
       for (let i = 0; i < 8; i++) {
@@ -1013,7 +1065,6 @@ function drawHazards() {
         ctx.stroke();
       }
 
-      // titik merah
       ctx.fillStyle = "#ff5252";
       ctx.beginPath();
       ctx.arc(0, 0, 4, 0, Math.PI * 2);
@@ -1037,7 +1088,6 @@ function drawHazards() {
       );
       ctx.fill();
 
-      // tentakel
       ctx.strokeStyle = "rgba(181, 126, 255, 0.85)";
       ctx.lineWidth = 3;
       for (let i = -2; i <= 2; i++) {
@@ -1060,7 +1110,6 @@ function drawHazards() {
 }
 
 function drawPlayer() {
-  // aura shield
   if (skills.shield.active) {
     ctx.save();
     ctx.translate(player.x, player.y);
@@ -1076,7 +1125,6 @@ function drawPlayer() {
 
   ctx.save();
 
-  // kedipan saat invincible
   if (
     player.invincibleTimer > 0 &&
     Math.floor(player.invincibleTimer * 10) % 2 === 0
@@ -1098,7 +1146,6 @@ function drawPlayer() {
       player.height
     );
   } else {
-    // fallback kalau gambar belum sempat di-load
     ctx.fillStyle = "#4dd0ff";
     ctx.beginPath();
     ctx.ellipse(
@@ -1123,7 +1170,6 @@ function render() {
   drawHazards();
   drawPlayer();
 
-  // overlay saat slow time
   if (skills.slow.active) {
     ctx.save();
     ctx.fillStyle = "rgba(173,216,230,0.16)";
@@ -1141,6 +1187,7 @@ function init() {
     resetJoystickKnob();
   }
   updateSkillUI();
+  updateMuteButtonUI();
 }
 
 init();
