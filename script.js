@@ -19,6 +19,14 @@ const retryBtn = document.getElementById("retryBtn");
 const resumeBtn = document.getElementById("resumeBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 
+// Kontrol mobile
+const mobilePauseBtn = document.getElementById("mobilePauseBtn");
+const joystickBase = document.getElementById("joystickBase");
+const joystickKnob = document.getElementById("joystickKnob");
+const skillDashBtn = document.getElementById("skillDash");
+const skillShieldBtn = document.getElementById("skillShield");
+const skillSlowBtn = document.getElementById("skillSlow");
+
 // Gambar ikan
 const fishImg = new Image();
 fishImg.src = "fish.png"; // pastikan file ini ada di folder yang sama
@@ -49,6 +57,21 @@ let backgroundBubbleTimer = 0;
 let lastTimestamp = 0;
 let globalTime = 0;
 
+// Joystick analog
+const joystick = {
+  active: false,
+  pointerId: null,
+  dirX: 0,
+  dirY: 0,
+};
+
+// Skill system
+const skills = {
+  dash: { cooldown: 5, timer: 0 },
+  shield: { cooldown: 10, timer: 0, active: false, duration: 3, remaining: 0 },
+  slow: { cooldown: 12, timer: 0, active: false, duration: 3, remaining: 0 },
+};
+
 // --- OBJEK GAME ---
 
 const player = {
@@ -71,7 +94,7 @@ const hazards = [];
 const bubbles = [];
 const bgRocks = [];
 
-// --- INPUT ---
+// --- INPUT KEYBOARD ---
 window.addEventListener("keydown", handleKeyDown);
 window.addEventListener("keyup", handleKeyUp);
 
@@ -98,11 +121,15 @@ function handleKeyDown(e) {
     togglePause();
   }
 
-  // Spasi untuk mulai dari menu
   if (key === " " && currentState === STATE.MENU) {
     resetGame();
     setState(STATE.PLAYING);
   }
+
+  // skill dengan keyboard
+  if (key === "j") attemptDash();
+  if (key === "k") attemptShield();
+  if (key === "l") attemptSlow();
 }
 
 function handleKeyUp(e) {
@@ -124,6 +151,86 @@ function handleKeyUp(e) {
   }
 }
 
+// --- JOYSTICK ANALOG (MOBILE) ---
+if (joystickBase && joystickKnob) {
+  joystickBase.addEventListener("pointerdown", onJoystickDown);
+  joystickBase.addEventListener("pointermove", onJoystickMove);
+  joystickBase.addEventListener("pointerup", onJoystickUp);
+  joystickBase.addEventListener("pointercancel", onJoystickUp);
+  joystickBase.addEventListener("pointerleave", (e) => {
+    if (joystick.active) onJoystickUp(e);
+  });
+}
+
+function onJoystickDown(e) {
+  joystick.active = true;
+  joystick.pointerId = e.pointerId;
+  joystickBase.setPointerCapture(e.pointerId);
+  updateJoystick(e);
+}
+
+function onJoystickMove(e) {
+  if (!joystick.active || e.pointerId !== joystick.pointerId) return;
+  updateJoystick(e);
+}
+
+function onJoystickUp(e) {
+  if (e.pointerId !== joystick.pointerId) return;
+  joystick.active = false;
+  joystick.pointerId = null;
+  joystick.dirX = 0;
+  joystick.dirY = 0;
+  resetJoystickKnob();
+  try {
+    joystickBase.releasePointerCapture(e.pointerId);
+  } catch (err) {
+    // ignore
+  }
+}
+
+function updateJoystick(e) {
+  const rect = joystickBase.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  let dx = x - cx;
+  let dy = y - cy;
+
+  const maxDist = rect.width * 0.4; // radius joystick
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+  if (dist > maxDist) {
+    dx = (dx / dist) * maxDist;
+    dy = (dy / dist) * maxDist;
+  }
+
+  // normalisasi untuk arah
+  if (dist < 6) {
+    joystick.dirX = 0;
+    joystick.dirY = 0;
+  } else {
+    joystick.dirX = dx / dist;
+    joystick.dirY = dy / dist;
+  }
+
+  const knobX = cx + dx;
+  const knobY = cy + dy;
+
+  joystickKnob.style.left = `${knobX}px`;
+  joystickKnob.style.top = `${knobY}px`;
+}
+
+function resetJoystickKnob() {
+  const rect = joystickBase.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+  joystickKnob.style.left = `${cx}px`;
+  joystickKnob.style.top = `${cy}px`;
+}
+
 // --- TOMBOL UI ---
 startBtn.addEventListener("click", () => {
   resetGame();
@@ -142,6 +249,17 @@ resumeBtn.addEventListener("click", () => {
 pauseBtn.addEventListener("click", () => {
   togglePause();
 });
+
+if (mobilePauseBtn) {
+  mobilePauseBtn.addEventListener("click", () => {
+    togglePause();
+  });
+}
+
+// Skill buttons (HP)
+if (skillDashBtn) skillDashBtn.addEventListener("click", attemptDash);
+if (skillShieldBtn) skillShieldBtn.addEventListener("click", attemptShield);
+if (skillSlowBtn) skillSlowBtn.addEventListener("click", attemptSlow);
 
 // --- FUNGSI STATE ---
 
@@ -211,9 +329,19 @@ function resetGame() {
   bubbleTimer = 0;
   backgroundBubbleTimer = 0;
 
+  // reset skills
+  skills.dash.timer = 0;
+  skills.shield.timer = 0;
+  skills.shield.active = false;
+  skills.shield.remaining = 0;
+  skills.slow.timer = 0;
+  skills.slow.active = false;
+  skills.slow.remaining = 0;
+
   scoreEl.textContent = "0";
   levelEl.textContent = "1";
   updateHealthBar();
+  updateSkillUI();
 }
 
 // --- HEALTH BAR ---
@@ -240,14 +368,164 @@ function updateHealthBar() {
 function damagePlayer(amount) {
   if (player.invincibleTimer > 0 || currentState !== STATE.PLAYING) return;
 
-  player.health -= amount;
-  if (player.health < 0) player.health = 0;
-  player.invincibleTimer = 1.1; // detik kebal setelah kena
+  let finalDamage = amount;
 
+  // shield mengurangi damage
+  if (skills.shield.active) {
+    finalDamage *= 0.3; // 70% ditahan shield
+  }
+
+  player.health -= finalDamage;
+  if (player.health < 0) player.health = 0;
+  player.invincibleTimer = 0.4; // sejenak kedap-kedip
   updateHealthBar();
+
   if (player.health <= 0) {
     gameOver();
   }
+}
+
+// --- SKILL LOGIC ---
+
+function attemptDash() {
+  if (skills.dash.timer > 0 || currentState !== STATE.PLAYING) return;
+
+  let dirX = joystick.dirX;
+  let dirY = joystick.dirY;
+
+  // kalau joystick netral, pakai input keyboard
+  if (dirX === 0 && dirY === 0) {
+    if (keys["arrowleft"] || keys["a"]) dirX = -1;
+    else if (keys["arrowright"] || keys["d"]) dirX = 1;
+    if (keys["arrowup"] || keys["w"]) dirY = -1;
+    else if (keys["arrowdown"] || keys["s"]) dirY = 1;
+  }
+
+  // kalau masih netral, pakai arah gerak terakhir, fallback ke kanan
+  if (dirX === 0 && dirY === 0) {
+    const speed = Math.hypot(player.vx, player.vy);
+    if (speed > 10) {
+      dirX = player.vx / speed;
+      dirY = player.vy / speed;
+    } else {
+      dirX = 1;
+      dirY = 0;
+    }
+  }
+
+  const dashPower = 650;
+  player.vx += dirX * dashPower;
+  player.vy += dirY * dashPower;
+
+  // invincible sebentar saat dash
+  player.invincibleTimer = Math.max(player.invincibleTimer, 0.6);
+  skills.dash.timer = skills.dash.cooldown;
+
+  flashSkillButton(skillDashBtn);
+  updateSkillUI();
+}
+
+function attemptShield() {
+  if (
+    skills.shield.timer > 0 ||
+    skills.shield.active ||
+    currentState !== STATE.PLAYING
+  )
+    return;
+
+  skills.shield.active = true;
+  skills.shield.remaining = skills.shield.duration;
+  skills.shield.timer = skills.shield.cooldown;
+
+  flashSkillButton(skillShieldBtn);
+  updateSkillUI();
+}
+
+function attemptSlow() {
+  if (
+    skills.slow.timer > 0 ||
+    skills.slow.active ||
+    currentState !== STATE.PLAYING
+  )
+    return;
+
+  skills.slow.active = true;
+  skills.slow.remaining = skills.slow.duration;
+  skills.slow.timer = skills.slow.cooldown;
+
+  flashSkillButton(skillSlowBtn);
+  updateSkillUI();
+}
+
+function updateSkills(dt) {
+  // cooldown
+  for (const key of ["dash", "shield", "slow"]) {
+    if (skills[key].timer > 0) {
+      skills[key].timer -= dt;
+      if (skills[key].timer < 0) skills[key].timer = 0;
+    }
+  }
+
+  // durasi aktif
+  if (skills.shield.active) {
+    skills.shield.remaining -= dt;
+    if (skills.shield.remaining <= 0) {
+      skills.shield.active = false;
+      skills.shield.remaining = 0;
+    }
+  }
+
+  if (skills.slow.active) {
+    skills.slow.remaining -= dt;
+    if (skills.slow.remaining <= 0) {
+      skills.slow.active = false;
+      skills.slow.remaining = 0;
+    }
+  }
+
+  updateSkillUI();
+}
+
+function updateSkillUI() {
+  updateSkillButton(skillDashBtn, skills.dash.timer, false, "Dash (J)");
+  updateSkillButton(
+    skillShieldBtn,
+    skills.shield.timer,
+    skills.shield.active,
+    "Shield (K)"
+  );
+  updateSkillButton(
+    skillSlowBtn,
+    skills.slow.timer,
+    skills.slow.active,
+    "Slow (L)"
+  );
+}
+
+function updateSkillButton(btn, cooldown, active, label) {
+  if (!btn) return;
+
+  if (cooldown > 0) {
+    btn.disabled = true;
+    btn.classList.add("cooldown");
+    btn.textContent = `CD ${cooldown.toFixed(1)}s`;
+  } else {
+    btn.disabled = false;
+    btn.classList.remove("cooldown");
+    btn.textContent = label;
+  }
+
+  if (active) {
+    btn.classList.add("active-skill");
+  } else {
+    btn.classList.remove("active-skill");
+  }
+}
+
+function flashSkillButton(btn) {
+  if (!btn) return;
+  btn.classList.add("flash");
+  setTimeout(() => btn.classList.remove("flash"), 150);
 }
 
 // --- BACKGROUND PARALLAX ---
@@ -407,6 +685,12 @@ function updatePlayer(dt) {
   if (keys["arrowleft"] || keys["a"]) ax -= player.accel;
   if (keys["arrowright"] || keys["d"]) ax += player.accel;
 
+  // input dari joystick analog
+  if (joystick.dirX !== 0 || joystick.dirY !== 0) {
+    ax += joystick.dirX * player.accel;
+    ay += joystick.dirY * player.accel;
+  }
+
   player.vx += ax * dt;
   player.vy += ay * dt;
 
@@ -461,18 +745,18 @@ function rectsIntersect(a, b) {
 
 // --- UPDATE & LOOP ---
 
-function updateGame(dt) {
-  // Progression
+function updateGame(dt, worldDt) {
+  // progression
   elapsed += dt;
-  distance += worldSpeed * dt;
+  distance += worldSpeed * worldDt;
   const difficulty = 1 + elapsed / 20; // tiap 20 detik naik
   level = Math.min(10, Math.floor(difficulty));
   worldSpeed = 160 + difficulty * 40;
 
-  coinTimer += dt;
-  hazardTimer += dt;
-  bubbleTimer += dt;
-  backgroundBubbleTimer += dt;
+  coinTimer += worldDt;
+  hazardTimer += worldDt;
+  bubbleTimer += worldDt;
+  backgroundBubbleTimer += worldDt;
 
   const coinInterval = Math.max(0.35, 1.1 / difficulty);
   const hazardInterval = Math.max(0.5, 2.0 / difficulty);
@@ -487,35 +771,43 @@ function updateGame(dt) {
     hazards.push(createHazard());
   }
 
-  // Gelembung dari ekor ikan
+  // gelembung dari ekor ikan
   if (bubbleTimer >= 0.06) {
     bubbleTimer = 0;
-    spawnBubble(player.x - player.width / 2, player.y + (Math.random() * 12 - 6));
+    spawnBubble(
+      player.x - player.width / 2,
+      player.y + (Math.random() * 12 - 6)
+    );
   }
 
-  // Gelembung dari dasar laut
+  // gelembung dari dasar laut
   if (backgroundBubbleTimer >= 0.3) {
     backgroundBubbleTimer = 0;
     spawnBubble(Math.random() * canvas.width, canvas.height + 10);
   }
 
   updatePlayer(dt);
-  updateCoins(dt);
-  updateHazards(dt);
+  updateCoins(worldDt);
+  updateHazards(worldDt);
 
   // skor naik seiring waktu + level
   score += dt * (5 + level * 2);
   scoreEl.textContent = Math.floor(score);
   levelEl.textContent = level.toString();
+
+  updateSkills(dt);
 }
 
 function update(dt) {
   globalTime += dt;
 
-  updateBackground(dt);
+  const slowMul = skills.slow.active ? 0.4 : 1;
+  const worldDt = dt * slowMul;
+
+  updateBackground(worldDt);
 
   if (currentState === STATE.PLAYING) {
-    updateGame(dt);
+    updateGame(dt, worldDt);
   } else if (currentState === STATE.MENU) {
     // animasi ikan pelan saat di menu
     const centerY = canvas.height / 2;
@@ -523,7 +815,7 @@ function update(dt) {
     player.y = centerY + Math.sin(globalTime * 1.5) * 15;
   }
 
-  updateBubbles(dt);
+  updateBubbles(worldDt);
 }
 
 function gameLoop(timestamp) {
@@ -669,8 +961,8 @@ function drawHazards() {
       ctx.ellipse(
         0,
         0,
-        (h.width * 0.6),
-        (h.height * 0.45),
+        h.width * 0.6,
+        h.height * 0.45,
         0,
         0,
         Math.PI * 2
@@ -700,10 +992,27 @@ function drawHazards() {
 }
 
 function drawPlayer() {
+  // aura shield
+  if (skills.shield.active) {
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    const pulse = 1 + Math.sin(globalTime * 6) * 0.05;
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = "rgba(144,238,144,0.9)";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, player.width * 0.8 * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   ctx.save();
 
   // kedipan saat invincible
-  if (player.invincibleTimer > 0 && Math.floor(player.invincibleTimer * 10) % 2 === 0) {
+  if (
+    player.invincibleTimer > 0 &&
+    Math.floor(player.invincibleTimer * 10) % 2 === 0
+  ) {
     ctx.globalAlpha = 0.4;
   }
 
@@ -745,6 +1054,14 @@ function render() {
   drawCoins();
   drawHazards();
   drawPlayer();
+
+  // overlay saat slow time
+  if (skills.slow.active) {
+    ctx.save();
+    ctx.fillStyle = "rgba(173,216,230,0.16)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
 }
 
 // --- INIT ---
@@ -752,6 +1069,10 @@ function init() {
   initBackground();
   updatePanels();
   updateHealthBar();
+  if (joystickBase && joystickKnob) {
+    resetJoystickKnob();
+  }
+  updateSkillUI();
 }
 
 init();
