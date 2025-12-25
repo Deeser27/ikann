@@ -6,8 +6,13 @@
     sans-serif;
 }
 
+html,
 body {
-  min-height: 100vh;
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
   background: radial-gradient(circle at top, #4facfe 0%, #000428 60%);
   display: flex;
   align-items: center;
@@ -15,12 +20,14 @@ body {
   color: #e0f7fa;
 }
 
+/* ===== GAME WRAPPER ===== */
+
 .wrapper {
   position: relative;
   width: 100%;
   max-width: 1000px;
-  padding: 20px;
-  gap: 12px;
+  padding: 16px;
+  gap: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -30,16 +37,18 @@ h1 {
   letter-spacing: 1px;
   font-weight: 700;
   text-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
+
+/* ===== HUD ===== */
 
 #hud {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 6px 10px;
   border-radius: 999px;
   background: rgba(0, 16, 32, 0.7);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
@@ -84,6 +93,8 @@ h1 {
   opacity: 0.9;
 }
 
+/* ===== BUTTON ===== */
+
 button {
   border: none;
   padding: 6px 14px;
@@ -111,22 +122,33 @@ button:disabled {
   cursor: default;
 }
 
+/* ===== CANVAS ===== */
+
 #game {
-  margin-top: 10px;
+  margin-top: 8px;
   border-radius: 18px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   background: #001427;
   max-width: 100%;
 }
 
-/* PANELS (menu, pause, game over) */
+/* agar ukuran canvas pas di HP landscape */
+@media (max-width: 900px) and (orientation: landscape) {
+  #game {
+    width: 100%;
+    height: auto;
+  }
+}
+
+/* ===== PANELS (menu, pause, game over) ===== */
+
 .panel {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: min(480px, 90%);
-  padding: 20px 22px;
+  padding: 18px 20px;
   border-radius: 24px;
   background: rgba(0, 7, 20, 0.85);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
@@ -156,17 +178,17 @@ button:disabled {
   display: none;
 }
 
-/* === KONTROL MOBILE (JOYSTICK + SKILL) === */
+/* ===== KONTROL MOBILE (JOYSTICK + SKILL) ===== */
 
 #mobileControls {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 16px;
-  display: none; /* muncul via media query */
+  display: flex; /* default: tampil, nanti disembunyikan di desktop */
   justify-content: space-between;
   align-items: center;
-  padding: 0 24px;
+  padding: 0 20px;
   pointer-events: none;
   z-index: 6;
 }
@@ -176,8 +198,8 @@ button:disabled {
 }
 
 #joystickArea {
-  width: 150px;
-  height: 150px;
+  width: 140px;
+  height: 140px;
 }
 
 #joystickBase {
@@ -188,7 +210,7 @@ button:disabled {
   background: radial-gradient(
     circle at center,
     rgba(255, 255, 255, 0.18),
-    rgba(0, 0, 0, 0.75)
+    rgba(0, 0, 0, 0.8)
   );
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6);
@@ -196,11 +218,11 @@ button:disabled {
 
 #joystickKnob {
   position: absolute;
-  width: 60px;
-  height: 60px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: radial-gradient(circle at top, #00b4d8, #0077b6);
-  border: 2px solid rgba(255, 255, 255, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.7);
   left: 50%;
   top: 50%;
@@ -211,7 +233,7 @@ button:disabled {
 #mobileButtons {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-end;
 }
 
@@ -245,7 +267,7 @@ button:disabled {
   transform: scale(1.05);
 }
 
-/* === OVERLAY ROTATE TO LANDSCAPE === */
+/* ===== HINT PUTAR HP ===== */
 
 #rotateHint {
   display: none;
@@ -276,10 +298,8 @@ button:disabled {
   opacity: 0.9;
 }
 
-/* === MATIKAN GESTUR ZOOM/SCROLL DI AREA KONTROL, BUKAN DI BODY === */
+/* ===== MATIKAN GESTUR ZOOM/SCROLL DI AREA JOYSTICK & BUTTON HP ===== */
 
-canvas,
-#mobileControls,
 #joystickArea,
 #joystickBase,
 #joystickKnob,
@@ -292,58 +312,57 @@ canvas,
   user-select: none;
 }
 
-/* === HP POTRAIT: TAMPILKAN HINT PUTAR HP === */
+/* ===== RESPONSIVE ===== */
+
+/* Tampilkan hint putar HP hanya di HP portrait */
 @media (orientation: portrait) and (max-width: 900px) {
   #rotateHint {
     display: flex;
   }
 }
 
-/* === HP LANDSCAPE === */
+/* Sembunyikan kontrol mobile di layar besar (desktop) */
+@media (min-width: 901px) {
+  #mobileControls {
+    display: none;
+  }
+}
+
+/* HP landscape: kecilkan HUD dan canvas supaya muat di layar */
 @media (max-width: 900px) and (orientation: landscape) {
   body {
     align-items: stretch;
-    /* scroll masih boleh di MENU, di-lock lewat class saat PLAYING */
-  }
-
-  /* lock scroll hanya saat game aktif (class ditambahkan via JS) */
-  body.game-locked {
-    overflow: hidden;
   }
 
   .wrapper {
     padding: 8px;
-    max-width: 100%;
   }
 
   h1 {
     font-size: 18px;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   #hud {
-    font-size: 12px;
+    font-size: 11px;
     padding: 4px 8px;
-    gap: 8px;
   }
 
   #healthBar {
-    width: 160px;
+    width: 150px;
     height: 12px;
   }
 
   #healthText {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   #game {
-    margin-top: 6px;
+    margin-top: 4px;
     border-radius: 14px;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
   }
 
   #mobileControls {
-    display: flex;
     bottom: 4px;
     padding: 0 10px;
   }
@@ -358,12 +377,8 @@ canvas,
     height: 50px;
   }
 
-  #mobileButtons {
-    gap: 6px;
-  }
-
   .skill-btn {
-    min-width: 70px;
+    min-width: 68px;
     font-size: 10px;
     padding: 4px 6px;
   }
@@ -374,7 +389,7 @@ canvas,
   }
 }
 
-/* Responsive umum untuk layar kecil */
+/* Layar sangat kecil: HUD jadi kolom */
 @media (max-width: 600px) {
   #hud {
     flex-direction: column;
