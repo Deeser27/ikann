@@ -276,9 +276,8 @@ button:disabled {
   opacity: 0.9;
 }
 
-/* === MATIKAN GESTUR ZOOM/SCROLL DI AREA GAME === */
+/* === MATIKAN GESTUR ZOOM/SCROLL DI AREA KONTROL, BUKAN DI BODY === */
 
-body,
 canvas,
 #mobileControls,
 #joystickArea,
@@ -304,7 +303,12 @@ canvas,
 @media (max-width: 900px) and (orientation: landscape) {
   body {
     align-items: stretch;
-    overflow: hidden; /* jangan bisa scroll */
+    /* scroll masih boleh di MENU, di-lock lewat class saat PLAYING */
+  }
+
+  /* lock scroll hanya saat game aktif (class ditambahkan via JS) */
+  body.game-locked {
+    overflow: hidden;
   }
 
   .wrapper {
