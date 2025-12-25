@@ -276,18 +276,35 @@ button:disabled {
   opacity: 0.9;
 }
 
-/* === RESPONSIVE: HP POTRAIT === */
-/* Saat portrait (layar tinggi vertikal), tampilkan hint untuk putar ke landscape */
+/* === MATIKAN GESTUR ZOOM/SCROLL DI AREA GAME === */
+
+body,
+canvas,
+#mobileControls,
+#joystickArea,
+#joystickBase,
+#joystickKnob,
+#mobileButtons,
+.skill-btn,
+#mobilePauseBtn {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* === HP POTRAIT: TAMPILKAN HINT PUTAR HP === */
 @media (orientation: portrait) and (max-width: 900px) {
   #rotateHint {
     display: flex;
   }
 }
 
-/* === RESPONSIVE: HP LANDSCAPE === */
+/* === HP LANDSCAPE === */
 @media (max-width: 900px) and (orientation: landscape) {
   body {
     align-items: stretch;
+    overflow: hidden; /* jangan bisa scroll */
   }
 
   .wrapper {
