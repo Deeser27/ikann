@@ -114,7 +114,7 @@ button:active {
   max-width: 100%;
 }
 
-/* Panels (menu, pause, game over) */
+/* PANELS (menu, pause, game over) */
 .panel {
   position: absolute;
   top: 50%;
@@ -151,6 +151,57 @@ button:active {
   display: none;
 }
 
+/* === KONTROL HP === */
+
+#mobileControls {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 16px;
+  display: none;           /* default: sembunyikan, muncul di HP */
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  pointer-events: none;    /* biar panel lain tetap bisa diklik,
+                              anak2nya di-override */
+  z-index: 6;
+}
+
+#mobileControls .control-block {
+  pointer-events: auto;
+}
+
+#dpad {
+  width: 140px;
+  height: 140px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+}
+
+#mobileControls button {
+  box-shadow: 0 6px 10px rgba(0,0,0,0.6);
+}
+
+/* tombol arah */
+.btn-dir {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #e0f7fa;
+  font-size: 20px;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+/* tombol pause HP */
+#mobileButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   #hud {
@@ -160,5 +211,10 @@ button:active {
 
   #healthBar {
     width: 100%;
+  }
+
+  /* tampilkan kontrol HP di layar kecil */
+  #mobileControls {
+    display: flex;
   }
 }
