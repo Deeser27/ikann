@@ -197,7 +197,6 @@ function onJoystickDown(e) {
   e.preventDefault();
   joystick.active = true;
   joystick.pointerId = e.pointerId;
-  joystickBase.setPointerCapture(e.pointerId);
   updateJoystick(e);
 }
 
@@ -216,11 +215,6 @@ function onJoystickUp(e) {
   joystick.dirY = 0;
   joystick.strength = 0;
   resetJoystickKnob();
-  try {
-    joystickBase.releasePointerCapture(e.pointerId);
-  } catch (err) {
-    // ignore
-  }
 }
 
 function updateJoystick(e) {
@@ -272,6 +266,30 @@ function resetJoystickKnob() {
   joystickKnob.style.top = `${cy}px`;
 }
 
+// --- BIND TOMBOL MOBILE DENGAN POINTERDOWN (SUPPORT MULTI-TOUCH) ---
+
+function bindMobileButton(btn, handler) {
+  if (!btn) return;
+
+  const opts = { passive: false };
+
+  // untuk HP (multi-touch)
+  btn.addEventListener(
+    "pointerdown",
+    (e) => {
+      e.preventDefault();
+      handler();
+    },
+    opts
+  );
+
+  // fallback untuk desktop/mouse
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    handler();
+  });
+}
+
 // --- TOMBOL UI ---
 startBtn.addEventListener("click", () => {
   resetGame();
@@ -291,16 +309,15 @@ pauseBtn.addEventListener("click", () => {
   togglePause();
 });
 
+// Mobile pause pakai pointerdown juga
 if (mobilePauseBtn) {
-  mobilePauseBtn.addEventListener("click", () => {
-    togglePause();
-  });
+  bindMobileButton(mobilePauseBtn, togglePause);
 }
 
-// Skill buttons (HP)
-if (skillDashBtn) skillDashBtn.addEventListener("click", attemptDash);
-if (skillShieldBtn) skillShieldBtn.addEventListener("click", attemptShield);
-if (skillSlowBtn) skillSlowBtn.addEventListener("click", attemptSlow);
+// Skill buttons (HP) pakai pointerdown (multi-touch)
+bindMobileButton(skillDashBtn, attemptDash);
+bindMobileButton(skillShieldBtn, attemptShield);
+bindMobileButton(skillSlowBtn, attemptSlow);
 
 // --- FUNGSI STATE ---
 
