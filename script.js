@@ -73,6 +73,23 @@ const skills = {
   slow: { cooldown: 12, timer: 0, active: false, duration: 3, remaining: 0 },
 };
 
+// --- FUNGSI LOCK BODY (supaya scroll ke-lock hanya saat PLAYING di HP landscape) ---
+function applyBodyLock() {
+  const isMobileLandscape = window.matchMedia(
+    "(max-width: 900px) and (orientation: landscape)"
+  ).matches;
+
+  if (isMobileLandscape && currentState === STATE.PLAYING) {
+    document.body.classList.add("game-locked");
+    window.scrollTo(0, 0);
+  } else {
+    document.body.classList.remove("game-locked");
+  }
+}
+
+window.addEventListener("resize", applyBodyLock);
+window.addEventListener("orientationchange", applyBodyLock);
+
 // --- OBJEK GAME ---
 
 const player = {
@@ -307,6 +324,7 @@ if (skillSlowBtn) skillSlowBtn.addEventListener("click", attemptSlow);
 function setState(newState) {
   currentState = newState;
   updatePanels();
+  applyBodyLock(); // lock/unlock body tergantung state & orientasi
 }
 
 function updatePanels() {
@@ -1124,6 +1142,7 @@ function init() {
     resetJoystickKnob();
   }
   updateSkillUI();
+  applyBodyLock(); // pastikan awalnya tidak ke-lock
 }
 
 init();
