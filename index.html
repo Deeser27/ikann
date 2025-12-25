@@ -2,14 +2,13 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <!-- Penting untuk tampilan HP -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ninu fish</title>
+  <title>nin fish</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="wrapper">
-    <h1>Ninu fish</h1>
+    <h1>ninu fish</h1>
 
     <div id="hud">
       <div class="hud-group">
@@ -37,38 +36,39 @@
 
     <canvas id="game" width="960" height="540"></canvas>
 
-    <!-- KONTROL HP (D-PAD + PAUSE) -->
+    <!-- KONTROL MOBILE: JOYSTICK + SKILL + PAUSE -->
     <div id="mobileControls">
-      <div id="dpad" class="control-block">
-        <div></div>
-        <button class="btn-dir" data-key="w">▲</button>
-        <div></div>
-
-        <button class="btn-dir" data-key="a">◀</button>
-        <div></div>
-        <button class="btn-dir" data-key="d">▶</button>
-
-        <div></div>
-        <button class="btn-dir" data-key="s">▼</button>
-        <div></div>
+      <div id="joystickArea" class="control-block">
+        <div id="joystickBase">
+          <div id="joystickKnob"></div>
+        </div>
       </div>
 
       <div id="mobileButtons" class="control-block">
+        <div id="skillButtonsRow">
+          <button class="skill-btn" id="skillDash">Dash (J)</button>
+          <button class="skill-btn" id="skillShield">Shield (K)</button>
+          <button class="skill-btn" id="skillSlow">Slow (L)</button>
+        </div>
         <button id="mobilePauseBtn">Pause</button>
       </div>
     </div>
 
     <!-- PANEL MENU -->
     <div id="menuPanel" class="panel">
-      <h2>Selamat Datang!</h2>
+      <h2>Selamat Datang DI gme gajelasss</h2>
       <p>
-        Gerakkan ikan biru dengan <b>WASD</b>, <b>tombol panah</b>,<br>
-        atau <b>D-pad di layar HP</b>.<br><br>
-        Kumpulkan <b>mutiara emas</b> dan hindari<br>
-        <b>ranjau laut</b> &amp; <b>ubur-ubur beracun</b>!
+        Gerakkan ikannya dengan <b>WASD</b>, <b>tombol panah</b>,<br>
+        atau <b>joystick analog di HP (mode landscape)</b>.<br><br>
+        Kumpulkan <b>mutiara emas</b>, hindari<br>
+        <b>ranjau laut</b> &amp; <b>ubur-ubur beracun</b>!<br><br>
+        Skill:<br>
+        - <b>Dash</b>: lari cepat ke arah gerak (J / tombol Dash)<br>
+        - <b>Shield</b>: pelindung sementara (K / tombol Shield)<br>
+        - <b>Slow</b>: perlambat waktu (L / tombol Slow)
       </p>
       <div class="panel-actions">
-        <button id="startBtn">Mulai Game</button>
+        <button id="startBtn">Mulaiii</button>
       </div>
     </div>
 
@@ -76,8 +76,8 @@
     <div id="gameOverPanel" class="panel hidden">
       <h2>Game Over</h2>
       <p>
-        Skor akhir kamu: <b><span id="finalScore">0</span></b><br>
-        Coba lagi untuk mendapatkan skor yang lebih tinggi!
+        dihh cupuu skor kamu: <b><span id="finalScore">0</span></b><br>
+        makanya jangan kebanyakan tidurr syaa
       </p>
       <div class="panel-actions">
         <button id="retryBtn">Main Lagi</button>
@@ -88,7 +88,7 @@
     <div id="pausePanel" class="panel hidden">
       <h2>Pause</h2>
       <p>
-        Game sedang di-pause.<br>
+        Anah di pausee.<br>
         Tekan tombol <b>P</b>, tombol <b>Pause</b>,<br>
         atau <b>Pause di HP</b> untuk lanjut.
       </p>
@@ -96,11 +96,19 @@
         <button id="resumeBtn">Lanjut</button>
       </div>
     </div>
+  </div>
 
+  <!-- OVERLAY: MINTA PUTAR HP KE LANDSCAPE -->
+  <div id="rotateHint">
+    <div class="rotate-card">
+      <h2>Putar ke Landscape</h2>
+      <p>
+        Biar ga susah puter hpnya, have funn wkwkwk<br>
+        ke posisi <b>landscape</b> (horizontal).
+      </p>
+    </div>
   </div>
 
   <script src="script.js"></script>
 </body>
 </html>
-
-
