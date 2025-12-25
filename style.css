@@ -2,7 +2,8 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
 }
 
 body {
@@ -28,7 +29,7 @@ body {
 h1 {
   letter-spacing: 1px;
   font-weight: 700;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.6);
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
   margin-bottom: 6px;
 }
 
@@ -41,7 +42,7 @@ h1 {
   padding: 8px 12px;
   border-radius: 999px;
   background: rgba(0, 16, 32, 0.7);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(10px);
   font-size: 14px;
 }
@@ -67,8 +68,8 @@ h1 {
   height: 14px;
   border-radius: 999px;
   overflow: hidden;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 #healthBarInner {
@@ -91,30 +92,34 @@ button {
   color: #012a4a;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
   transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
 }
 
 button:hover {
   transform: translateY(-1px);
   filter: brightness(1.08);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55);
 }
 
 button:active {
   transform: translateY(1px);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+button:disabled {
+  cursor: default;
 }
 
 #game {
   margin-top: 10px;
   border-radius: 18px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   background: #001427;
   max-width: 100%;
 }
 
-/* Panels (menu, pause, game over) */
+/* PANELS (menu, pause, game over) */
 .panel {
   position: absolute;
   top: 50%;
@@ -124,7 +129,7 @@ button:active {
   padding: 20px 22px;
   border-radius: 24px;
   background: rgba(0, 7, 20, 0.85);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(18px);
   text-align: center;
   z-index: 5;
@@ -151,7 +156,204 @@ button:active {
   display: none;
 }
 
-/* Responsive */
+/* === KONTROL MOBILE (JOYSTICK + SKILL) === */
+
+#mobileControls {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 16px;
+  display: none; /* muncul via media query */
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  pointer-events: none;
+  z-index: 6;
+}
+
+#mobileControls .control-block {
+  pointer-events: auto;
+}
+
+#joystickArea {
+  width: 150px;
+  height: 150px;
+}
+
+#joystickBase {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.18),
+    rgba(0, 0, 0, 0.75)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6);
+}
+
+#joystickKnob {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at top, #00b4d8, #0077b6);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.7);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* tombol skill + pause mobile */
+#mobileButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+#skillButtonsRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.skill-btn {
+  min-width: 78px;
+  padding: 6px 10px;
+  font-size: 11px;
+  border-radius: 16px;
+}
+
+.skill-btn.cooldown {
+  background: rgba(0, 0, 0, 0.6);
+  color: #c3c3c3;
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+.skill-btn.active-skill {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 8px 18px rgba(0, 0, 0, 0.6);
+}
+
+.skill-btn.flash {
+  transform: scale(1.05);
+}
+
+/* === OVERLAY ROTATE TO LANDSCAPE === */
+
+#rotateHint {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.rotate-card {
+  max-width: 320px;
+  background: rgba(0, 0, 20, 0.9);
+  padding: 18px 20px;
+  border-radius: 18px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.8);
+}
+
+.rotate-card h2 {
+  margin-bottom: 8px;
+}
+
+.rotate-card p {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* === RESPONSIVE: HP POTRAIT === */
+/* Saat portrait (layar tinggi vertikal), tampilkan hint untuk putar ke landscape */
+@media (orientation: portrait) and (max-width: 900px) {
+  #rotateHint {
+    display: flex;
+  }
+}
+
+/* === RESPONSIVE: HP LANDSCAPE === */
+@media (max-width: 900px) and (orientation: landscape) {
+  body {
+    align-items: stretch;
+  }
+
+  .wrapper {
+    padding: 8px;
+    max-width: 100%;
+  }
+
+  h1 {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  #hud {
+    font-size: 12px;
+    padding: 4px 8px;
+    gap: 8px;
+  }
+
+  #healthBar {
+    width: 160px;
+    height: 12px;
+  }
+
+  #healthText {
+    font-size: 11px;
+  }
+
+  #game {
+    margin-top: 6px;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
+  }
+
+  #mobileControls {
+    display: flex;
+    bottom: 4px;
+    padding: 0 10px;
+  }
+
+  #joystickArea {
+    width: 120px;
+    height: 120px;
+  }
+
+  #joystickKnob {
+    width: 50px;
+    height: 50px;
+  }
+
+  #mobileButtons {
+    gap: 6px;
+  }
+
+  .skill-btn {
+    min-width: 70px;
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+
+  #mobilePauseBtn {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Responsive umum untuk layar kecil */
 @media (max-width: 600px) {
   #hud {
     flex-direction: column;
