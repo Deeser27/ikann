@@ -61,8 +61,9 @@ let globalTime = 0;
 const joystick = {
   active: false,
   pointerId: null,
-  dirX: 0,
+  dirX: 0, // arah (unit vector)
   dirY: 0,
+  strength: 0, // 0..1: seberapa jauh dari tengah (analog feel)
 };
 
 // Skill system
@@ -95,8 +96,21 @@ const bubbles = [];
 const bgRocks = [];
 
 // --- INPUT KEYBOARD ---
-window.addEventListener("keydown", handleKeyDown);
-window.addEventListener("keyup", handleKeyUp);
+window.addEventListener(
+  "keydown",
+  (e) => {
+    handleKeyDown(e);
+  },
+  { passive: false }
+);
+
+window.addEventListener(
+  "keyup",
+  (e) => {
+    handleKeyUp(e);
+  },
+  { passive: false }
+);
 
 function handleKeyDown(e) {
   const key = e.key.toLowerCase();
@@ -118,18 +132,29 @@ function handleKeyDown(e) {
   }
 
   if (key === "p") {
+    e.preventDefault();
     togglePause();
   }
 
   if (key === " " && currentState === STATE.MENU) {
+    e.preventDefault();
     resetGame();
     setState(STATE.PLAYING);
   }
 
   // skill dengan keyboard
-  if (key === "j") attemptDash();
-  if (key === "k") attemptShield();
-  if (key === "l") attemptSlow();
+  if (key === "j") {
+    e.preventDefault();
+    attemptDash();
+  }
+  if (key === "k") {
+    e.preventDefault();
+    attemptShield();
+  }
+  if (key === "l") {
+    e.preventDefault();
+    attemptSlow();
+  }
 }
 
 function handleKeyUp(e) {
@@ -153,16 +178,23 @@ function handleKeyUp(e) {
 
 // --- JOYSTICK ANALOG (MOBILE) ---
 if (joystickBase && joystickKnob) {
-  joystickBase.addEventListener("pointerdown", onJoystickDown);
-  joystickBase.addEventListener("pointermove", onJoystickMove);
-  joystickBase.addEventListener("pointerup", onJoystickUp);
-  joystickBase.addEventListener("pointercancel", onJoystickUp);
-  joystickBase.addEventListener("pointerleave", (e) => {
-    if (joystick.active) onJoystickUp(e);
-  });
+  const opts = { passive: false }; // supaya preventDefault() bekerja
+
+  joystickBase.addEventListener("pointerdown", onJoystickDown, opts);
+  joystickBase.addEventListener("pointermove", onJoystickMove, opts);
+  joystickBase.addEventListener("pointerup", onJoystickUp, opts);
+  joystickBase.addEventListener("pointercancel", onJoystickUp, opts);
+  joystickBase.addEventListener(
+    "pointerleave",
+    (e) => {
+      if (joystick.active) onJoystickUp(e);
+    },
+    opts
+  );
 }
 
 function onJoystickDown(e) {
+  e.preventDefault();
   joystick.active = true;
   joystick.pointerId = e.pointerId;
   joystickBase.setPointerCapture(e.pointerId);
@@ -171,15 +203,18 @@ function onJoystickDown(e) {
 
 function onJoystickMove(e) {
   if (!joystick.active || e.pointerId !== joystick.pointerId) return;
+  e.preventDefault();
   updateJoystick(e);
 }
 
 function onJoystickUp(e) {
   if (e.pointerId !== joystick.pointerId) return;
+  e.preventDefault();
   joystick.active = false;
   joystick.pointerId = null;
   joystick.dirX = 0;
   joystick.dirY = 0;
+  joystick.strength = 0;
   resetJoystickKnob();
   try {
     joystickBase.releasePointerCapture(e.pointerId);
@@ -200,20 +235,26 @@ function updateJoystick(e) {
   let dy = y - cy;
 
   const maxDist = rect.width * 0.4; // radius joystick
-  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  let dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
+  // clamp jarak ke lingkaran
   if (dist > maxDist) {
     dx = (dx / dist) * maxDist;
     dy = (dy / dist) * maxDist;
+    dist = maxDist;
   }
 
-  // normalisasi untuk arah
-  if (dist < 6) {
+  const strength = Math.min(1, dist / maxDist);
+
+  // kalau dekat banget ke tengah, dianggap netral
+  if (strength < 0.1) {
     joystick.dirX = 0;
     joystick.dirY = 0;
+    joystick.strength = 0;
   } else {
-    joystick.dirX = dx / dist;
+    joystick.dirX = dx / dist; // unit vector
     joystick.dirY = dy / dist;
+    joystick.strength = strength; // 0..1 analog feel
   }
 
   const knobX = cx + dx;
@@ -680,24 +721,34 @@ function updatePlayer(dt) {
   let ax = 0;
   let ay = 0;
 
+  // input keyboard (digital)
   if (keys["arrowup"] || keys["w"]) ay -= player.accel;
   if (keys["arrowdown"] || keys["s"]) ay += player.accel;
   if (keys["arrowleft"] || keys["a"]) ax -= player.accel;
   if (keys["arrowright"] || keys["d"]) ax += player.accel;
 
-  // input dari joystick analog
-  if (joystick.dirX !== 0 || joystick.dirY !== 0) {
-    ax += joystick.dirX * player.accel;
-    ay += joystick.dirY * player.accel;
+  // input dari joystick analog (analog feel)
+  if (joystick.strength > 0) {
+    // strength 0..1 -> akselerasi & maxSpeed naik pelan2
+    const analogAccelFactor = 0.35 + 0.9 * joystick.strength; // 0.35x sampai 1.25x
+    ax += joystick.dirX * player.accel * analogAccelFactor;
+    ay += joystick.dirY * player.accel * analogAccelFactor;
   }
 
   player.vx += ax * dt;
   player.vy += ay * dt;
 
-  // batasi kecepatan
+  // batasi kecepatan berdasarkan analog strength
+  let maxSpeed = player.maxSpeed;
+  if (joystick.strength > 0) {
+    // analog: setengah stick = lambat, full = lebih kencang dikit
+    const speedFactor = 0.4 + 0.9 * joystick.strength; // 0.4..1.3x
+    maxSpeed = player.maxSpeed * speedFactor;
+  }
+
   const speed = Math.hypot(player.vx, player.vy);
-  if (speed > player.maxSpeed) {
-    const scale = player.maxSpeed / speed;
+  if (speed > maxSpeed) {
+    const scale = maxSpeed / speed;
     player.vx *= scale;
     player.vy *= scale;
   }
