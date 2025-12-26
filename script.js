@@ -33,6 +33,11 @@ const skinPrevBtn = document.getElementById("skinPrevBtn");
 const skinNextBtn = document.getElementById("skinNextBtn");
 const skinNameEl = document.getElementById("skinName");
 
+// UI pemilihan map
+const mapPrevBtn = document.getElementById("mapPrevBtn");
+const mapNextBtn = document.getElementById("mapNextBtn");
+const mapNameEl = document.getElementById("mapName");
+
 // Overlay rotate ke landscape
 const rotateHint = document.getElementById("rotateHint");
 
@@ -40,14 +45,14 @@ const rotateHint = document.getElementById("rotateHint");
 const fishSkins = [
   {
     name: "Biru",
-    src: "fish_biru.png",                  // ikan biru
-    auraColor: "rgba(100, 181, 246, 0.95)" // biru muda
+    src: "fish_biru.png",
+    auraColor: "rgba(100, 181, 246, 0.95)", // biru muda
   },
   {
     name: "Oren",
-    src: "fish_oren.png",                  // ikan oren
-    auraColor: "rgba(255, 183, 77, 0.95)"  // oranye
-  }
+    src: "fish_oren.png",
+    auraColor: "rgba(255, 183, 77, 0.95)", // oranye
+  },
 ];
 
 let currentSkinIndex = 0;
@@ -86,6 +91,130 @@ function bindSkinButtons() {
   }
 }
 
+// ================== MAP SYSTEM (Kuburan Kapal, Atlantis, Terumbu Karang) ==================
+const maps = [
+  {
+    id: "ship",
+    name: "Kapoal pecaj",
+    gradientStops: [
+      { pos: 0.0, color: "#001219" },
+      { pos: 0.3, color: "#003049" },
+      { pos: 0.7, color: "#001b2a" },
+      { pos: 1.0, color: "#000814" },
+    ],
+    floorColor: "#000814",
+    rockColor: "#00111a",
+    kelpColor: "rgba(46, 125, 50, 0.9)",
+    kelpHeadColor: "rgba(165, 214, 167, 0.95)",
+    causticAlpha: 0.03,
+    causticColor: "rgba(200,220,255,0.5)",
+    coralPalettes: [
+      { main: "#6d4c41", edge: "#a1887f" },
+      { main: "#5d4037", edge: "#8d6e63" },
+    ],
+    coralCount: 6,
+    sandDecorCount: 6,
+    distantFishColor: "#90caf9",
+    distantFishAlpha: 0.25,
+    // khusus kuburan kapal
+    shipWoodColor: "#5d4037",
+    shipWoodHighlightColor: "#8d6e63",
+    shipMetalColor: "#90a4ae",
+    shipWreckCount: 6,
+    ruinCount: 0,
+  },
+  {
+    id: "atlantis",
+    name: "atlantiss",
+    gradientStops: [
+      { pos: 0.0, color: "#001b2e" },
+      { pos: 0.25, color: "#004e7c" },
+      { pos: 0.6, color: "#007c91" },
+      { pos: 1.0, color: "#003049" },
+    ],
+    floorColor: "#002635",
+    rockColor: "#002739",
+    kelpColor: "rgba(76, 175, 80, 0.9)",
+    kelpHeadColor: "rgba(200, 230, 201, 0.95)",
+    causticAlpha: 0.08,
+    causticColor: "rgba(255,255,255,0.8)",
+    coralPalettes: [
+      { main: "#4db6ac", edge: "#b2dfdb" },
+      { main: "#81d4fa", edge: "#b3e5fc" },
+    ],
+    coralCount: 8,
+    sandDecorCount: 10,
+    distantFishColor: "#e0f7fa",
+    distantFishAlpha: 0.45,
+    // pilar & gerbang Atlantis
+    ruinMainColor: "#cfd8dc",
+    ruinHighlightColor: "#eceff1",
+    crystalColor: "#80deea",
+    shipWreckCount: 0,
+    ruinCount: 8,
+  },
+  {
+    id: "reef",
+    name: "terummbu krng",
+    gradientStops: [
+      { pos: 0.0, color: "#290c46" },
+      { pos: 0.25, color: "#3b1c65" },
+      { pos: 0.6, color: "#1b3b5a" },
+      { pos: 1.0, color: "#03131f" },
+    ],
+    floorColor: "#12041d",
+    rockColor: "#1b1030",
+    kelpColor: "rgba(139, 195, 74, 0.9)",
+    kelpHeadColor: "rgba(220, 237, 200, 0.95)",
+    causticAlpha: 0.09,
+    causticColor: "rgba(255,255,255,0.7)",
+    coralPalettes: [
+      { main: "#ba68c8", edge: "#e1bee7" },
+      { main: "#f06292", edge: "#f8bbd0" },
+      { main: "#ffb74d", edge: "#ffe0b2" },
+      { main: "#4dd0e1", edge: "#b2ebf2" },
+    ],
+    coralCount: 16,
+    sandDecorCount: 16,
+    distantFishColor: "#e1f5fe",
+    distantFishAlpha: 0.5,
+    shipWreckCount: 0,
+    ruinCount: 0,
+  },
+];
+
+let currentMapIndex = 0;
+let currentMap = maps[0];
+
+function applyCurrentMap() {
+  currentMap = maps[currentMapIndex] || maps[0];
+  if (mapNameEl) mapNameEl.textContent = currentMap.name;
+  initBackground(); // regenerate dekorasi sesuai map
+}
+
+function changeMap(delta) {
+  const len = maps.length;
+  currentMapIndex = (currentMapIndex + delta + len) % len;
+  applyCurrentMap();
+}
+
+function bindMapButtons() {
+  if (mapPrevBtn) {
+    const handler = (e) => {
+      e.preventDefault();
+      changeMap(-1);
+    };
+    mapPrevBtn.addEventListener("pointerdown", handler, { passive: false });
+  }
+  if (mapNextBtn) {
+    const handler = (e) => {
+      e.preventDefault();
+      changeMap(1);
+    };
+    mapNextBtn.addEventListener("pointerdown", handler, { passive: false });
+  }
+}
+
 // ================== AUDIO: SFX & MUSIK ==================
 function makeAudio(src, volume = 0.7, playbackRate = 1) {
   const a = new Audio(src);
@@ -101,7 +230,7 @@ const sfx = {
   hitJelly: makeAudio("sfx_jelly.wav", 0.7, 1),
   dash: makeAudio("sfx_dash.wav", 0.8, 1.1),
   shieldOn: makeAudio("sfx_shield.wav", 0.8, 1),
-  slowOn: makeAudio("sfx_slow.wav", 0.8, 0.95)
+  slowOn: makeAudio("sfx_slow.wav", 0.8, 0.95),
 };
 
 function playSfx(audio) {
@@ -151,7 +280,7 @@ const STATE = {
   MENU: "menu",
   PLAYING: "playing",
   PAUSED: "paused",
-  GAMEOVER: "gameover"
+  GAMEOVER: "gameover",
 };
 
 let currentState = STATE.MENU;
@@ -178,14 +307,14 @@ const joystick = {
   pointerId: null,
   dirX: 0,
   dirY: 0,
-  strength: 0 // 0..1
+  strength: 0, // 0..1
 };
 
 // Skill system (Dash, Shield, Slow)
 const skills = {
-  dash:   { cooldown: 5,  timer: 0 },
+  dash: { cooldown: 5, timer: 0 },
   shield: { cooldown: 10, timer: 0, active: false, duration: 3, remaining: 0 },
-  slow:   { cooldown: 12, timer: 0, active: false, duration: 3, remaining: 0 }
+  slow: { cooldown: 12, timer: 0, active: false, duration: 3, remaining: 0 },
 };
 
 // ================== OBJEK GAME ==================
@@ -201,7 +330,7 @@ const player = {
   friction: 0.88,
   health: 100,
   maxHealth: 100,
-  invincibleTimer: 0
+  invincibleTimer: 0,
 };
 
 const coins = [];
@@ -210,71 +339,83 @@ const bubbles = [];
 const bgRocks = [];
 const kelpPlants = [];
 const distantFish = [];
+const corals = [];
+const sandDecor = [];
+const shipWrecks = [];
+const ruins = [];
 
 // ================== INPUT KEYBOARD ==================
-window.addEventListener("keydown", (e) => {
-  const key = e.key.toLowerCase();
+window.addEventListener(
+  "keydown",
+  (e) => {
+    const key = e.key.toLowerCase();
 
-  if (
-    [
-      "arrowup",
-      "arrowdown",
-      "arrowleft",
-      "arrowright",
-      "w",
-      "a",
-      "s",
-      "d"
-    ].includes(key)
-  ) {
-    keys[key] = true;
-    e.preventDefault();
-  }
+    if (
+      [
+        "arrowup",
+        "arrowdown",
+        "arrowleft",
+        "arrowright",
+        "w",
+        "a",
+        "s",
+        "d",
+      ].includes(key)
+    ) {
+      keys[key] = true;
+      e.preventDefault();
+    }
 
-  if (key === "p") {
-    e.preventDefault();
-    togglePause();
-  }
+    if (key === "p") {
+      e.preventDefault();
+      togglePause();
+    }
 
-  if (key === " " && currentState === STATE.MENU) {
-    e.preventDefault();
-    resetGame();
-    setState(STATE.PLAYING);
-    playBgMusic();
-  }
+    if (key === " " && currentState === STATE.MENU) {
+      e.preventDefault();
+      resetGame();
+      setState(STATE.PLAYING);
+      playBgMusic();
+    }
 
-  if (key === "j") {
-    e.preventDefault();
-    attemptDash();
-  }
-  if (key === "k") {
-    e.preventDefault();
-    attemptShield();
-  }
-  if (key === "l") {
-    e.preventDefault();
-    attemptSlow();
-  }
-}, { passive: false });
+    if (key === "j") {
+      e.preventDefault();
+      attemptDash();
+    }
+    if (key === "k") {
+      e.preventDefault();
+      attemptShield();
+    }
+    if (key === "l") {
+      e.preventDefault();
+      attemptSlow();
+    }
+  },
+  { passive: false }
+);
 
-window.addEventListener("keyup", (e) => {
-  const key = e.key.toLowerCase();
-  if (
-    [
-      "arrowup",
-      "arrowdown",
-      "arrowleft",
-      "arrowright",
-      "w",
-      "a",
-      "s",
-      "d"
-    ].includes(key)
-  ) {
-    keys[key] = false;
-    e.preventDefault();
-  }
-}, { passive: false });
+window.addEventListener(
+  "keyup",
+  (e) => {
+    const key = e.key.toLowerCase();
+    if (
+      [
+        "arrowup",
+        "arrowdown",
+        "arrowleft",
+        "arrowright",
+        "w",
+        "a",
+        "s",
+        "d",
+      ].includes(key)
+    ) {
+      keys[key] = false;
+      e.preventDefault();
+    }
+  },
+  { passive: false }
+);
 
 // ================== JOYSTICK ANALOG (MOBILE) ==================
 if (joystickBase && joystickKnob) {
@@ -283,9 +424,13 @@ if (joystickBase && joystickKnob) {
   joystickBase.addEventListener("pointermove", onJoystickMove, opts);
   joystickBase.addEventListener("pointerup", onJoystickUp, opts);
   joystickBase.addEventListener("pointercancel", onJoystickUp, opts);
-  joystickBase.addEventListener("pointerleave", (e) => {
-    if (joystick.active) onJoystickUp(e);
-  }, opts);
+  joystickBase.addEventListener(
+    "pointerleave",
+    (e) => {
+      if (joystick.active) onJoystickUp(e);
+    },
+    opts
+  );
 }
 
 function onJoystickDown(e) {
@@ -363,10 +508,14 @@ function bindMobileButton(btn, handler) {
   if (!btn) return;
   const opts = { passive: false };
 
-  btn.addEventListener("pointerdown", (e) => {
-    e.preventDefault();
-    handler();
-  }, opts);
+  btn.addEventListener(
+    "pointerdown",
+    (e) => {
+      e.preventDefault();
+      handler();
+    },
+    opts
+  );
 
   btn.addEventListener("click", (e) => {
     e.preventDefault();
@@ -419,17 +568,21 @@ bindMobileButton(skillSlowBtn, attemptSlow);
 
 // Mute musik
 if (muteBtn) {
-  muteBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    musicMuted = !musicMuted;
-    bgMusic.muted = musicMuted;
+  muteBtn.addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      musicMuted = !musicMuted;
+      bgMusic.muted = musicMuted;
 
-    if (!musicMuted && currentState === STATE.PLAYING && bgMusic.paused) {
-      playBgMusic();
-    }
+      if (!musicMuted && currentState === STATE.PLAYING && bgMusic.paused) {
+        playBgMusic();
+      }
 
-    updateMuteButtonUI();
-  }, { passive: false });
+      updateMuteButtonUI();
+    },
+    { passive: false }
+  );
 }
 
 // ================== STATE FUNCTIONS ==================
@@ -593,7 +746,8 @@ function attemptShield() {
     skills.shield.timer > 0 ||
     skills.shield.active ||
     currentState !== STATE.PLAYING
-  ) return;
+  )
+    return;
 
   skills.shield.active = true;
   skills.shield.remaining = skills.shield.duration;
@@ -609,7 +763,8 @@ function attemptSlow() {
     skills.slow.timer > 0 ||
     skills.slow.active ||
     currentState !== STATE.PLAYING
-  ) return;
+  )
+    return;
 
   skills.slow.active = true;
   skills.slow.remaining = skills.slow.duration;
@@ -688,31 +843,112 @@ function flashSkillButton(btn) {
 
 // ================== BACKGROUND & BUBBLES ==================
 function initBackground() {
+  const m = currentMap || maps[0];
+
   bgRocks.length = 0;
   kelpPlants.length = 0;
   distantFish.length = 0;
+  corals.length = 0;
+  sandDecor.length = 0;
+  shipWrecks.length = 0;
+  ruins.length = 0;
 
+  // batu
   for (let i = 0; i < 8; i++) {
     bgRocks.push(createRock(Math.random() * canvas.width));
   }
 
+  // kelp
   for (let i = 0; i < 7; i++) {
     kelpPlants.push({
       x: Math.random() * canvas.width,
       baseY: canvas.height - 80,
       height: 60 + Math.random() * 90,
       swaySeed: Math.random() * Math.PI * 2,
-      speedFactor: 0.2 + Math.random() * 0.2
+      speedFactor: 0.2 + Math.random() * 0.2,
     });
   }
 
+  // ikan kecil jauh
   for (let i = 0; i < 10; i++) {
     distantFish.push({
       x: Math.random() * canvas.width,
       y: 40 + Math.random() * (canvas.height * 0.4),
       size: 6 + Math.random() * 5,
       speedFactor: 0.15 + Math.random() * 0.2,
-      flip: Math.random() < 0.5 ? 1 : -1
+      flip: Math.random() < 0.5 ? 1 : -1,
+    });
+  }
+
+  // karang
+  const palettes =
+    (m.coralPalettes && m.coralPalettes.length > 0
+      ? m.coralPalettes
+      : [
+          { main: "#ff8a65", edge: "#ffccbc" },
+          { main: "#ffb74d", edge: "#ffe0b2" },
+        ]);
+  const coralCount = m.coralCount || 0;
+  for (let i = 0; i < coralCount; i++) {
+    const c = palettes[Math.floor(Math.random() * palettes.length)];
+    const size = 25 + Math.random() * 35;
+    corals.push({
+      x: Math.random() * canvas.width,
+      baseY: canvas.height - 70,
+      width: size * (0.9 + Math.random() * 0.6),
+      height: size * (1.1 + Math.random() * 0.4),
+      mainColor: c.main,
+      edgeColor: c.edge,
+      speedFactor: 0.22 + Math.random() * 0.18,
+      tiltSeed: Math.random() * Math.PI * 2,
+    });
+  }
+
+  // dekorasi pasir
+  const decorCount = m.sandDecorCount || 0;
+  for (let i = 0; i < decorCount; i++) {
+    sandDecor.push({
+      x: Math.random() * canvas.width,
+      y: canvas.height - (50 + Math.random() * 20),
+      type: Math.random() < 0.5 ? "star" : "shell",
+      size: 6 + Math.random() * 7,
+      rotation: Math.random() * Math.PI * 2,
+      color: Math.random() < 0.5 ? "#ffcc80" : "#ffab91",
+      speedFactor: 0.35 + Math.random() * 0.2,
+    });
+  }
+
+  // kuburan kapal: bangkai kapal / jangkar
+  const shipCount = m.shipWreckCount || 0;
+  for (let i = 0; i < shipCount; i++) {
+    const variantRand = Math.random();
+    const variant =
+      variantRand < 0.5 ? "hull" : variantRand < 0.8 ? "mast" : "anchor";
+    const size = 80 + Math.random() * 100;
+    shipWrecks.push({
+      variant,
+      x: Math.random() * canvas.width,
+      baseY: canvas.height - (40 + Math.random() * 40),
+      width: size,
+      height: size * (0.5 + Math.random() * 0.4),
+      tilt: (Math.random() * 0.5 - 0.25) * (variant === "mast" ? 0.7 : 1),
+      speedFactor: 0.22 + Math.random() * 0.18,
+    });
+  }
+
+  // Atlantis: pilar & gerbang
+  const ruinCount = m.ruinCount || 0;
+  for (let i = 0; i < ruinCount; i++) {
+    const type = Math.random() < 0.5 ? "pillar" : "arch";
+    const height = 80 + Math.random() * 90;
+    ruins.push({
+      type,
+      x: Math.random() * canvas.width,
+      baseY: canvas.height - 70,
+      height,
+      width: 32 + Math.random() * 20,
+      broken: Math.random() < 0.6,
+      speedFactor: 0.2 + Math.random() * 0.2,
     });
   }
 }
@@ -723,11 +959,12 @@ function createRock(x) {
     y: canvas.height - (40 + Math.random() * 80),
     width: 100 + Math.random() * 120,
     height: 40 + Math.random() * 40,
-    speedFactor: 0.25 + Math.random() * 0.35
+    speedFactor: 0.25 + Math.random() * 0.35,
   };
 }
 
 function updateBackground(dt) {
+  // batu
   for (const rock of bgRocks) {
     rock.x -= worldSpeed * rock.speedFactor * dt;
     if (rock.x + rock.width < -60) {
@@ -738,6 +975,7 @@ function updateBackground(dt) {
     }
   }
 
+  // kelp
   for (const k of kelpPlants) {
     k.x -= worldSpeed * k.speedFactor * dt;
     if (k.x < -60) {
@@ -747,6 +985,7 @@ function updateBackground(dt) {
     }
   }
 
+  // ikan jauh
   for (const f of distantFish) {
     f.x -= worldSpeed * f.speedFactor * dt;
     if (f.x < -40) {
@@ -754,6 +993,57 @@ function updateBackground(dt) {
       f.y = 40 + Math.random() * (canvas.height * 0.4);
       f.size = 6 + Math.random() * 5;
       f.flip = Math.random() < 0.5 ? 1 : -1;
+    }
+  }
+
+  // karang
+  for (const c of corals) {
+    c.x -= worldSpeed * c.speedFactor * dt;
+    if (c.x < -80) {
+      c.x = canvas.width + Math.random() * 200;
+      const size = 25 + Math.random() * 35;
+      c.width = size * (0.9 + Math.random() * 0.6);
+      c.height = size * (1.1 + Math.random() * 0.4);
+      c.tiltSeed = Math.random() * Math.PI * 2;
+    }
+  }
+
+  // dekorasi pasir
+  for (const d of sandDecor) {
+    d.x -= worldSpeed * d.speedFactor * dt;
+    if (d.x < -40) {
+      d.x = canvas.width + Math.random() * 200;
+      d.y = canvas.height - (50 + Math.random() * 20);
+      d.type = Math.random() < 0.5 ? "star" : "shell";
+      d.size = 6 + Math.random() * 7;
+      d.rotation = Math.random() * Math.PI * 2;
+      d.color = Math.random() < 0.5 ? "#ffcc80" : "#ffab91";
+    }
+  }
+
+  // bangkai kapal
+  for (const s of shipWrecks) {
+    s.x -= worldSpeed * s.speedFactor * dt;
+    if (s.x < -150) {
+      const size = 80 + Math.random() * 100;
+      s.x = canvas.width + Math.random() * 200;
+      s.baseY = canvas.height - (40 + Math.random() * 40);
+      s.width = size;
+      s.height = size * (0.5 + Math.random() * 0.4);
+      s.tilt = (Math.random() * 0.5 - 0.25) * (s.variant === "mast" ? 0.7 : 1);
+    }
+  }
+
+  // reruntuhan Atlantis
+  for (const r of ruins) {
+    r.x -= worldSpeed * r.speedFactor * dt;
+    if (r.x < -120) {
+      r.x = canvas.width + Math.random() * 200;
+      r.baseY = canvas.height - 70;
+      r.height = 80 + Math.random() * 90;
+      r.width = 32 + Math.random() * 20;
+      r.broken = Math.random() < 0.6;
+      r.type = Math.random() < 0.5 ? "pillar" : "arch";
     }
   }
 }
@@ -766,7 +1056,7 @@ function spawnBubble(x, y) {
     vx: -worldSpeed * 0.2,
     vy: -30 - Math.random() * 30,
     life: 0,
-    maxLife: 5
+    maxLife: 5,
   });
 }
 
@@ -791,7 +1081,7 @@ function createCoin() {
     width: 26,
     height: 26,
     vx: -(worldSpeed * (0.7 + Math.random() * 0.4)),
-    seed: Math.random() * Math.PI * 2
+    seed: Math.random() * Math.PI * 2,
   };
 }
 
@@ -830,7 +1120,7 @@ function createHazard() {
       vx: -(worldSpeed * (0.9 + Math.random() * 0.4)),
       vy: 0,
       damage: 25,
-      seed: Math.random() * Math.PI * 2
+      seed: Math.random() * Math.PI * 2,
     };
   } else {
     const upOrDown = Math.random() < 0.5 ? -1 : 1;
@@ -843,7 +1133,7 @@ function createHazard() {
       vx: -worldSpeed * 0.75,
       vy: upOrDown * 15,
       damage: 18,
-      seed: Math.random() * Math.PI * 2
+      seed: Math.random() * Math.PI * 2,
     };
   }
 }
@@ -1026,28 +1316,40 @@ function gameLoop(timestamp) {
 
 // ================== RENDER ==================
 function drawBackground() {
+  const m = currentMap || maps[0];
+
+  // gradient laut
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, "#023047");
-  gradient.addColorStop(0.35, "#014f86");
-  gradient.addColorStop(0.7, "#013a63");
-  gradient.addColorStop(1, "#001219");
+  if (m.gradientStops && m.gradientStops.length) {
+    for (const stop of m.gradientStops) {
+      gradient.addColorStop(stop.pos, stop.color);
+    }
+  } else {
+    gradient.addColorStop(0, "#021726");
+    gradient.addColorStop(0.25, "#023e73");
+    gradient.addColorStop(0.6, "#012b4a");
+    gradient.addColorStop(1, "#000814");
+  }
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // permukaan air glow
   ctx.save();
   ctx.globalAlpha = 0.22;
-  const surfGrad = ctx.createLinearGradient(0, 0, 0, 80);
-  surfGrad.addColorStop(0, "rgba(255,255,255,0.8)");
+  const surfGrad = ctx.createLinearGradient(0, 0, 0, 90);
+  surfGrad.addColorStop(0, "rgba(255,255,255,0.85)");
   surfGrad.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = surfGrad;
-  ctx.fillRect(0, 0, canvas.width, 80);
+  ctx.fillRect(0, 0, canvas.width, 90);
   ctx.restore();
 
+  // sun rays
   ctx.save();
   ctx.globalAlpha = 0.18;
   ctx.fillStyle = "#ffffff";
   for (let i = 0; i < 4; i++) {
-    const offset = ((globalTime * 18 + i * 140) % (canvas.width + 260)) - 260;
+    const offset =
+      ((globalTime * 18 + i * 140) % (canvas.width + 260)) - 260;
     ctx.beginPath();
     ctx.moveTo(offset, -40);
     ctx.lineTo(offset + 80, -40);
@@ -1058,13 +1360,37 @@ function drawBackground() {
   }
   ctx.restore();
 
+  // efek cahaya air (caustic)
   ctx.save();
-  ctx.fillStyle = "#00111b";
+  const caAlpha = m.causticAlpha ?? 0.07;
+  const caColor = m.causticColor ?? "rgba(255,255,255,0.6)";
+  ctx.globalAlpha = caAlpha;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = caColor;
+  for (let y = 40; y < canvas.height; y += 40) {
+    ctx.beginPath();
+    for (let x = -40; x < canvas.width + 40; x += 20) {
+      const t = globalTime * 1.8;
+      const offset =
+        Math.sin((x + t * 80) / 60 + y * 0.03) * 8 +
+        Math.cos((y + t * 40) / 50 + x * 0.02) * 6;
+      const yy = y + offset;
+      if (x === -40) ctx.moveTo(x, yy);
+      else ctx.lineTo(x, yy);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // dasar laut
+  ctx.save();
+  ctx.fillStyle = m.floorColor || "#00111b";
   ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
   ctx.restore();
 
+  // batu
   ctx.save();
-  ctx.fillStyle = "#001b2e";
+  ctx.fillStyle = m.rockColor || "#001b2e";
   for (const rock of bgRocks) {
     ctx.beginPath();
     ctx.moveTo(rock.x, canvas.height);
@@ -1079,6 +1405,98 @@ function drawBackground() {
   }
   ctx.restore();
 
+  // bangkai kapal (Kuburan Kapal)
+  if (currentMap.id === "ship") {
+    drawShipWrecks(m);
+  }
+
+  // reruntuhan (Atlantis)
+  if (currentMap.id === "atlantis") {
+    drawRuins(m);
+  }
+
+  // karang
+  ctx.save();
+  for (const c of corals) {
+    const x = c.x;
+    const yBase = c.baseY;
+    const w = c.width;
+    const h = c.height;
+    const sway = Math.sin(globalTime * 1.1 + c.tiltSeed) * 4;
+
+    const grad = ctx.createLinearGradient(x, yBase - h, x, yBase);
+    grad.addColorStop(0, c.edgeColor);
+    grad.addColorStop(1, c.mainColor);
+    ctx.fillStyle = grad;
+
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.4, yBase);
+    ctx.quadraticCurveTo(
+      x - w * 0.1 + sway,
+      yBase - h * 0.4,
+      x - w * 0.25,
+      yBase - h
+    );
+    ctx.quadraticCurveTo(
+      x - w * 0.05 + sway,
+      yBase - h * 0.55,
+      x + w * 0.05 + sway,
+      yBase - h * 0.1
+    );
+    ctx.quadraticCurveTo(
+      x + w * 0.2 + sway,
+      yBase - h * 0.7,
+      x + w * 0.35,
+      yBase
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // dekorasi pasir
+  ctx.save();
+  for (const d of sandDecor) {
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(d.rotation);
+
+    if (d.type === "star") {
+      const arms = 5;
+      const outer = d.size;
+      const inner = d.size * 0.4;
+      ctx.fillStyle = d.color;
+      ctx.beginPath();
+      for (let i = 0; i < arms * 2; i++) {
+        const angle = (Math.PI * i) / arms;
+        const r = i % 2 === 0 ? outer : inner;
+        const px = Math.cos(angle) * r;
+        const py = Math.sin(angle) * r;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      const r = d.size;
+      const gradShell = ctx.createLinearGradient(-r, 0, r, 0);
+      gradShell.addColorStop(0, "#ffe0b2");
+      gradShell.addColorStop(1, "#ffcc80");
+      ctx.fillStyle = gradShell;
+      ctx.beginPath();
+      ctx.moveTo(-r, 0);
+      ctx.quadraticCurveTo(-r * 0.3, -r * 0.9, 0, -r * 1.1);
+      ctx.quadraticCurveTo(r * 0.3, -r * 0.9, r, 0);
+      ctx.quadraticCurveTo(0, r * 0.4, -r, 0);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // kelp
   ctx.save();
   ctx.lineWidth = 4;
   for (const plant of kelpPlants) {
@@ -1097,19 +1515,20 @@ function drawBackground() {
       x + sway * 1.2,
       yBottom - h
     );
-    ctx.strokeStyle = "rgba(76, 175, 80, 0.9)";
+    ctx.strokeStyle = m.kelpColor || "rgba(76, 175, 80, 0.9)";
     ctx.stroke();
 
     ctx.beginPath();
     ctx.arc(x + sway * 1.2, yBottom - h, 5, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(129, 199, 132, 0.9)";
+    ctx.fillStyle = m.kelpHeadColor || "rgba(129, 199, 132, 0.9)";
     ctx.fill();
   }
   ctx.restore();
 
+  // ikan kecil jauh
   ctx.save();
-  ctx.globalAlpha = 0.45;
-  ctx.fillStyle = "#bbdefb";
+  ctx.globalAlpha = m.distantFishAlpha ?? 0.45;
+  ctx.fillStyle = m.distantFishColor || "#bbdefb";
   for (const f of distantFish) {
     const size = f.size;
     ctx.beginPath();
@@ -1125,6 +1544,204 @@ function drawBackground() {
     ctx.closePath();
     ctx.fill();
   }
+  ctx.restore();
+}
+
+// bangkai kapal: hull / mast / anchor
+function drawShipWrecks(map) {
+  if (!shipWrecks.length) return;
+  ctx.save();
+  const wood = map.shipWoodColor || "#5d4037";
+  const woodLight = map.shipWoodHighlightColor || "#8d6e63";
+  const metal = map.shipMetalColor || "#90a4ae";
+
+  for (const s of shipWrecks) {
+    ctx.save();
+    ctx.translate(s.x, s.baseY);
+    ctx.rotate(s.tilt);
+
+    const w = s.width;
+    const h = s.height;
+
+    if (s.variant === "hull") {
+      // badan kapal patah
+      ctx.fillStyle = wood;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.5, 0);
+      ctx.lineTo(-w * 0.1, -h * 0.6);
+      ctx.lineTo(w * 0.3, -h * 0.4);
+      ctx.lineTo(w * 0.45, 0);
+      ctx.lineTo(w * 0.15, h * 0.2);
+      ctx.lineTo(-w * 0.4, h * 0.15);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = woodLight;
+      ctx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.moveTo((i / 3) * w * 0.4, -h * 0.5);
+        ctx.lineTo((i / 3) * w * 0.45, h * 0.1);
+        ctx.stroke();
+      }
+    } else if (s.variant === "mast") {
+      // tiang kapal
+      ctx.fillStyle = wood;
+      ctx.fillRect(-w * 0.04, -h, w * 0.08, h);
+
+      ctx.beginPath();
+      ctx.moveTo(0, -h * 0.8);
+      ctx.lineTo(w * 0.4, -h * 0.5);
+      ctx.lineTo(0, -h * 0.2);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(207,216,220,0.8)";
+      ctx.fill();
+
+      ctx.strokeStyle = woodLight;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -h);
+      ctx.lineTo(0, h * 0.1);
+      ctx.stroke();
+    } else {
+      // jangkar sederhana
+      ctx.strokeStyle = metal;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, -h * 0.3);
+      ctx.lineTo(0, h * 0.1);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(0, -h * 0.38, 5, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.2, h * 0.1);
+      ctx.quadraticCurveTo(0, h * 0.3, w * 0.2, h * 0.1);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.2, h * 0.1);
+      ctx.lineTo(-w * 0.1, h * 0.26);
+      ctx.moveTo(w * 0.2, h * 0.1);
+      ctx.lineTo(w * 0.1, h * 0.26);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+// reruntuhan Atlantis: pilar & arch + kristal
+function drawRuins(map) {
+  if (!ruins.length) return;
+  ctx.save();
+  const colMain = map.ruinMainColor || "#cfd8dc";
+  const colHigh = map.ruinHighlightColor || "#eceff1";
+  const crystalColor = map.crystalColor || "#80deea";
+
+  for (const r of ruins) {
+    ctx.save();
+    ctx.translate(r.x, r.baseY);
+
+    const h = r.height;
+    const w = r.width;
+
+    if (r.type === "pillar") {
+      // pilar tegak
+      ctx.fillStyle = colMain;
+      ctx.fillRect(-w / 2, -h, w, h);
+
+      ctx.fillStyle = colHigh;
+      ctx.fillRect(-w / 2, -h - 8, w, 8);
+      ctx.fillRect(-w / 2, -10, w, 6);
+
+      if (r.broken) {
+        ctx.save();
+        ctx.translate(0, -h * 0.4);
+        ctx.rotate(-0.25);
+        ctx.fillStyle = colMain;
+        ctx.fillRect(-w / 2, 0, w, h * 0.3);
+        ctx.restore();
+      }
+
+      // kristal kecil di bawah
+      ctx.fillStyle = crystalColor;
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.3, 0);
+      ctx.lineTo(-w * 0.1, -12);
+      ctx.lineTo(w * 0.1, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    } else {
+      // gerbang / arch
+      ctx.fillStyle = colMain;
+      const archW = w * 2;
+      const archH = h;
+      ctx.beginPath();
+      ctx.moveTo(-archW / 2, 0);
+      ctx.lineTo(-archW / 2, -archH * 0.6);
+      ctx.quadraticCurveTo(
+        0,
+        -archH,
+        archW / 2,
+        -archH * 0.6
+      );
+      ctx.lineTo(archW / 2, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // highlight garis
+      ctx.strokeStyle = colHigh;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-archW / 2 + 5, -archH * 0.55);
+      ctx.quadraticCurveTo(
+        0,
+        -archH * 0.9,
+        archW / 2 - 5,
+        -archH * 0.55
+      );
+      ctx.stroke();
+
+      // pecahan di samping
+      if (r.broken) {
+        ctx.fillStyle = colMain;
+        ctx.beginPath();
+        ctx.moveTo(-archW / 2 - 10, 0);
+        ctx.lineTo(-archW / 2 + 5, -20);
+        ctx.lineTo(-archW / 2 + 15, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(archW / 2 + 10, 0);
+        ctx.lineTo(archW / 2 - 5, -24);
+        ctx.lineTo(archW / 2 - 15, 0);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // kristal di tengah
+      ctx.fillStyle = crystalColor;
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(0, -archH * 0.2);
+      ctx.lineTo(-10, -archH * 0.35);
+      ctx.lineTo(0, -archH * 0.5);
+      ctx.lineTo(10, -archH * 0.35);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+  }
+
   ctx.restore();
 }
 
@@ -1237,6 +1854,7 @@ function drawHazards() {
 }
 
 function drawPlayer() {
+  // aura shield
   if (skills.shield.active) {
     ctx.save();
     ctx.translate(player.x, player.y);
@@ -1308,7 +1926,9 @@ function render() {
 function initGame() {
   applyCurrentSkin();
   bindSkinButtons();
-  initBackground();
+  bindMapButtons();
+  applyCurrentMap(); // set map + dekorasi
+
   updatePanels();
   updateHealthBar();
   updateSkillUI();
@@ -1325,5 +1945,4 @@ function initGame() {
   requestAnimationFrame(gameLoop);
 }
 
-// Panggil init setelah semua elemen siap
 window.addEventListener("load", initGame);
