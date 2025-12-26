@@ -1,6 +1,6 @@
 "use strict";
 
-// --- DOM & CANVAS ---
+// ================== DOM & CANVAS ==================
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
@@ -20,7 +20,7 @@ const resumeBtn = document.getElementById("resumeBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const muteBtn = document.getElementById("muteBtn");
 
-// Kontrol mobile
+// Kontrol & skill mobile
 const mobilePauseBtn = document.getElementById("mobilePauseBtn");
 const joystickBase = document.getElementById("joystickBase");
 const joystickKnob = document.getElementById("joystickKnob");
@@ -28,12 +28,65 @@ const skillDashBtn = document.getElementById("skillDash");
 const skillShieldBtn = document.getElementById("skillShield");
 const skillSlowBtn = document.getElementById("skillSlow");
 
-// Gambar ikan
-const fishImg = new Image();
-fishImg.src = "fish.png"; // pastikan file ini ada di folder yang sama
+// UI pemilihan skin
+const skinPrevBtn = document.getElementById("skinPrevBtn");
+const skinNextBtn = document.getElementById("skinNextBtn");
+const skinNameEl = document.getElementById("skinName");
 
-// --- SFX & MUSIC ---
-// Helper untuk buat audio
+// Overlay rotate ke landscape
+const rotateHint = document.getElementById("rotateHint");
+
+// ================== SKIN SYSTEM (Biru & Oren) ==================
+const fishSkins = [
+  {
+    name: "Biru",
+    src: "fish_biru.png",                  // ikan biru
+    auraColor: "rgba(100, 181, 246, 0.95)" // biru muda
+  },
+  {
+    name: "Oren",
+    src: "fish_oren.png",                  // ikan oren
+    auraColor: "rgba(255, 183, 77, 0.95)"  // oranye
+  }
+];
+
+let currentSkinIndex = 0;
+const fishImg = new Image();
+let currentAuraColor = fishSkins[0].auraColor;
+
+function applyCurrentSkin() {
+  const skin = fishSkins[currentSkinIndex];
+  fishImg.src = skin.src;
+  currentAuraColor = skin.auraColor;
+  if (skinNameEl) skinNameEl.textContent = skin.name;
+}
+
+function changeSkin(delta) {
+  const len = fishSkins.length;
+  currentSkinIndex = (currentSkinIndex + delta + len) % len;
+  applyCurrentSkin();
+}
+
+// hanya pakai pointerdown supaya di HP 1 tap = 1 ganti skin
+function bindSkinButtons() {
+  if (skinPrevBtn) {
+    const prevHandler = (e) => {
+      e.preventDefault();
+      changeSkin(-1);
+    };
+    skinPrevBtn.addEventListener("pointerdown", prevHandler, { passive: false });
+  }
+
+  if (skinNextBtn) {
+    const nextHandler = (e) => {
+      e.preventDefault();
+      changeSkin(1);
+    };
+    skinNextBtn.addEventListener("pointerdown", nextHandler, { passive: false });
+  }
+}
+
+// ================== AUDIO: SFX & MUSIK ==================
 function makeAudio(src, volume = 0.7, playbackRate = 1) {
   const a = new Audio(src);
   a.volume = volume;
@@ -48,7 +101,7 @@ const sfx = {
   hitJelly: makeAudio("sfx_jelly.wav", 0.7, 1),
   dash: makeAudio("sfx_dash.wav", 0.8, 1.1),
   shieldOn: makeAudio("sfx_shield.wav", 0.8, 1),
-  slowOn: makeAudio("sfx_slow.wav", 0.8, 0.95),
+  slowOn: makeAudio("sfx_slow.wav", 0.8, 0.95)
 };
 
 function playSfx(audio) {
@@ -58,15 +111,12 @@ function playSfx(audio) {
     clone.volume = audio.volume;
     clone.playbackRate = audio.playbackRate;
     clone.play().catch(() => {});
-  } catch (e) {
-    // ignore
-  }
+  } catch {}
 }
 
 // Musik background
 const bgMusic = makeAudio("bg_music.mp3", 0.35, 1);
 bgMusic.loop = true;
-
 let musicMuted = false;
 
 function playBgMusic() {
@@ -74,18 +124,14 @@ function playBgMusic() {
   try {
     bgMusic.currentTime = 0;
     bgMusic.play().catch(() => {});
-  } catch (e) {
-    // ignore
-  }
+  } catch {}
 }
 
 function stopBgMusic() {
   try {
     bgMusic.pause();
     bgMusic.currentTime = 0;
-  } catch (e) {
-    // ignore
-  }
+  } catch {}
 }
 
 function updateMuteButtonUI() {
@@ -93,12 +139,19 @@ function updateMuteButtonUI() {
   muteBtn.textContent = musicMuted ? "Unmute Musik" : "Mute Musik";
 }
 
-// --- STATE GAME ---
+// ================== ORIENTASI / ROTATE HINT ==================
+function updateOrientationHint() {
+  if (!rotateHint) return;
+  const isPortrait = window.innerHeight >= window.innerWidth;
+  rotateHint.style.display = isPortrait ? "flex" : "none";
+}
+
+// ================== STATE GAME ==================
 const STATE = {
   MENU: "menu",
   PLAYING: "playing",
   PAUSED: "paused",
-  GAMEOVER: "gameover",
+  GAMEOVER: "gameover"
 };
 
 let currentState = STATE.MENU;
@@ -125,17 +178,17 @@ const joystick = {
   pointerId: null,
   dirX: 0,
   dirY: 0,
-  strength: 0, // 0..1
+  strength: 0 // 0..1
 };
 
-// Skill system
+// Skill system (Dash, Shield, Slow)
 const skills = {
-  dash: { cooldown: 5, timer: 0 },
+  dash:   { cooldown: 5,  timer: 0 },
   shield: { cooldown: 10, timer: 0, active: false, duration: 3, remaining: 0 },
-  slow: { cooldown: 12, timer: 0, active: false, duration: 3, remaining: 0 },
+  slow:   { cooldown: 12, timer: 0, active: false, duration: 3, remaining: 0 }
 };
 
-// --- OBJEK GAME ---
+// ================== OBJEK GAME ==================
 const player = {
   x: canvas.width * 0.2,
   y: canvas.height / 2,
@@ -148,32 +201,18 @@ const player = {
   friction: 0.88,
   health: 100,
   maxHealth: 100,
-  invincibleTimer: 0,
+  invincibleTimer: 0
 };
 
 const coins = [];
 const hazards = [];
 const bubbles = [];
 const bgRocks = [];
+const kelpPlants = [];
+const distantFish = [];
 
-// --- INPUT KEYBOARD ---
-window.addEventListener(
-  "keydown",
-  (e) => {
-    handleKeyDown(e);
-  },
-  { passive: false }
-);
-
-window.addEventListener(
-  "keyup",
-  (e) => {
-    handleKeyUp(e);
-  },
-  { passive: false }
-);
-
-function handleKeyDown(e) {
+// ================== INPUT KEYBOARD ==================
+window.addEventListener("keydown", (e) => {
   const key = e.key.toLowerCase();
 
   if (
@@ -185,7 +224,7 @@ function handleKeyDown(e) {
       "w",
       "a",
       "s",
-      "d",
+      "d"
     ].includes(key)
   ) {
     keys[key] = true;
@@ -216,9 +255,9 @@ function handleKeyDown(e) {
     e.preventDefault();
     attemptSlow();
   }
-}
+}, { passive: false });
 
-function handleKeyUp(e) {
+window.addEventListener("keyup", (e) => {
   const key = e.key.toLowerCase();
   if (
     [
@@ -229,29 +268,24 @@ function handleKeyUp(e) {
       "w",
       "a",
       "s",
-      "d",
+      "d"
     ].includes(key)
   ) {
     keys[key] = false;
     e.preventDefault();
   }
-}
+}, { passive: false });
 
-// --- JOYSTICK ANALOG (MOBILE) ---
+// ================== JOYSTICK ANALOG (MOBILE) ==================
 if (joystickBase && joystickKnob) {
   const opts = { passive: false };
-
   joystickBase.addEventListener("pointerdown", onJoystickDown, opts);
   joystickBase.addEventListener("pointermove", onJoystickMove, opts);
   joystickBase.addEventListener("pointerup", onJoystickUp, opts);
   joystickBase.addEventListener("pointercancel", onJoystickUp, opts);
-  joystickBase.addEventListener(
-    "pointerleave",
-    (e) => {
-      if (joystick.active) onJoystickUp(e);
-    },
-    opts
-  );
+  joystickBase.addEventListener("pointerleave", (e) => {
+    if (joystick.active) onJoystickUp(e);
+  }, opts);
 }
 
 function onJoystickDown(e) {
@@ -312,7 +346,6 @@ function updateJoystick(e) {
 
   const knobX = cx + dx;
   const knobY = cy + dy;
-
   joystickKnob.style.left = `${knobX}px`;
   joystickKnob.style.top = `${knobY}px`;
 }
@@ -325,20 +358,15 @@ function resetJoystickKnob() {
   joystickKnob.style.top = `${cy}px`;
 }
 
-// --- BUTTON BINDER (MOBILE) ---
+// ================== BANTUAN BUTTON MOBILE ==================
 function bindMobileButton(btn, handler) {
   if (!btn) return;
-
   const opts = { passive: false };
 
-  btn.addEventListener(
-    "pointerdown",
-    (e) => {
-      e.preventDefault();
-      handler();
-    },
-    opts
-  );
+  btn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    handler();
+  }, opts);
 
   btn.addEventListener("click", (e) => {
     e.preventDefault();
@@ -346,27 +374,38 @@ function bindMobileButton(btn, handler) {
   });
 }
 
-// --- TOMBOL UI ---
-// Start game
-startBtn.addEventListener("click", () => {
-  resetGame();
-  setState(STATE.PLAYING);
-  playBgMusic();
-});
+// ================== UI BUTTON EVENTS ==================
+if (startBtn) {
+  startBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    resetGame();
+    setState(STATE.PLAYING);
+    playBgMusic();
+  });
+}
 
-retryBtn.addEventListener("click", () => {
-  resetGame();
-  setState(STATE.PLAYING);
-  playBgMusic();
-});
+if (retryBtn) {
+  retryBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    resetGame();
+    setState(STATE.PLAYING);
+    playBgMusic();
+  });
+}
 
-resumeBtn.addEventListener("click", () => {
-  togglePause(true);
-});
+if (resumeBtn) {
+  resumeBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    togglePause(true);
+  });
+}
 
-pauseBtn.addEventListener("click", () => {
-  togglePause();
-});
+if (pauseBtn) {
+  pauseBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    togglePause();
+  });
+}
 
 // Mobile pause
 if (mobilePauseBtn) {
@@ -378,28 +417,22 @@ bindMobileButton(skillDashBtn, attemptDash);
 bindMobileButton(skillShieldBtn, attemptShield);
 bindMobileButton(skillSlowBtn, attemptSlow);
 
-// Mute button
+// Mute musik
 if (muteBtn) {
-  muteBtn.addEventListener(
-    "click",
-    (e) => {
-      e.preventDefault();
-      musicMuted = !musicMuted;
-      bgMusic.muted = musicMuted;
+  muteBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    musicMuted = !musicMuted;
+    bgMusic.muted = musicMuted;
 
-      // kalau unmute saat game lagi jalan dan musik sedang pause, nyalakan
-      if (!musicMuted && currentState === STATE.PLAYING && bgMusic.paused) {
-        playBgMusic();
-      }
+    if (!musicMuted && currentState === STATE.PLAYING && bgMusic.paused) {
+      playBgMusic();
+    }
 
-      updateMuteButtonUI();
-    },
-    { passive: false }
-  );
-  updateMuteButtonUI();
+    updateMuteButtonUI();
+  }, { passive: false });
 }
 
-// --- STATE FUNCTIONS ---
+// ================== STATE FUNCTIONS ==================
 function setState(newState) {
   currentState = newState;
   updatePanels();
@@ -419,7 +452,6 @@ function updatePanels() {
     gameOverPanel.classList.add("hidden");
     pausePanel.classList.remove("hidden");
   } else {
-    // PLAYING
     menuPanel.classList.add("hidden");
     gameOverPanel.classList.add("hidden");
     pausePanel.classList.add("hidden");
@@ -441,7 +473,7 @@ function togglePause(forceResume) {
 function gameOver() {
   setState(STATE.GAMEOVER);
   finalScoreEl.textContent = Math.floor(score);
-  stopBgMusic(); // berhenti saat kalah
+  stopBgMusic();
 }
 
 function resetGame() {
@@ -481,7 +513,7 @@ function resetGame() {
   updateSkillUI();
 }
 
-// --- HEALTH & DAMAGE ---
+// ================== HEALTH & DAMAGE ==================
 function updateHealthBar() {
   const ratio = player.health / player.maxHealth;
   const clamped = Math.max(0, Math.min(1, ratio));
@@ -505,7 +537,6 @@ function damagePlayer(amount) {
   if (player.invincibleTimer > 0 || currentState !== STATE.PLAYING) return;
 
   let finalDamage = amount;
-
   if (skills.shield.active) {
     finalDamage *= 0.3;
   }
@@ -520,7 +551,7 @@ function damagePlayer(amount) {
   }
 }
 
-// --- SKILLS ---
+// ================== SKILLS ==================
 function attemptDash() {
   if (skills.dash.timer > 0 || currentState !== STATE.PLAYING) return;
 
@@ -562,8 +593,7 @@ function attemptShield() {
     skills.shield.timer > 0 ||
     skills.shield.active ||
     currentState !== STATE.PLAYING
-  )
-    return;
+  ) return;
 
   skills.shield.active = true;
   skills.shield.remaining = skills.shield.duration;
@@ -579,8 +609,7 @@ function attemptSlow() {
     skills.slow.timer > 0 ||
     skills.slow.active ||
     currentState !== STATE.PLAYING
-  )
-    return;
+  ) return;
 
   skills.slow.active = true;
   skills.slow.remaining = skills.slow.duration;
@@ -657,11 +686,34 @@ function flashSkillButton(btn) {
   setTimeout(() => btn.classList.remove("flash"), 150);
 }
 
-// --- BACKGROUND PARALLAX ---
+// ================== BACKGROUND & BUBBLES ==================
 function initBackground() {
   bgRocks.length = 0;
+  kelpPlants.length = 0;
+  distantFish.length = 0;
+
   for (let i = 0; i < 8; i++) {
     bgRocks.push(createRock(Math.random() * canvas.width));
+  }
+
+  for (let i = 0; i < 7; i++) {
+    kelpPlants.push({
+      x: Math.random() * canvas.width,
+      baseY: canvas.height - 80,
+      height: 60 + Math.random() * 90,
+      swaySeed: Math.random() * Math.PI * 2,
+      speedFactor: 0.2 + Math.random() * 0.2
+    });
+  }
+
+  for (let i = 0; i < 10; i++) {
+    distantFish.push({
+      x: Math.random() * canvas.width,
+      y: 40 + Math.random() * (canvas.height * 0.4),
+      size: 6 + Math.random() * 5,
+      speedFactor: 0.15 + Math.random() * 0.2,
+      flip: Math.random() < 0.5 ? 1 : -1
+    });
   }
 }
 
@@ -671,7 +723,7 @@ function createRock(x) {
     y: canvas.height - (40 + Math.random() * 80),
     width: 100 + Math.random() * 120,
     height: 40 + Math.random() * 40,
-    speedFactor: 0.25 + Math.random() * 0.35,
+    speedFactor: 0.25 + Math.random() * 0.35
   };
 }
 
@@ -685,9 +737,27 @@ function updateBackground(dt) {
       rock.height = 40 + Math.random() * 40;
     }
   }
+
+  for (const k of kelpPlants) {
+    k.x -= worldSpeed * k.speedFactor * dt;
+    if (k.x < -60) {
+      k.x = canvas.width + Math.random() * 200;
+      k.height = 60 + Math.random() * 90;
+      k.swaySeed = Math.random() * Math.PI * 2;
+    }
+  }
+
+  for (const f of distantFish) {
+    f.x -= worldSpeed * f.speedFactor * dt;
+    if (f.x < -40) {
+      f.x = canvas.width + Math.random() * 150;
+      f.y = 40 + Math.random() * (canvas.height * 0.4);
+      f.size = 6 + Math.random() * 5;
+      f.flip = Math.random() < 0.5 ? 1 : -1;
+    }
+  }
 }
 
-// --- BUBBLES ---
 function spawnBubble(x, y) {
   bubbles.push({
     x,
@@ -696,7 +766,7 @@ function spawnBubble(x, y) {
     vx: -worldSpeed * 0.2,
     vy: -30 - Math.random() * 30,
     life: 0,
-    maxLife: 5,
+    maxLife: 5
   });
 }
 
@@ -712,7 +782,7 @@ function updateBubbles(dt) {
   }
 }
 
-// --- COINS & HAZARDS ---
+// ================== COINS & HAZARDS ==================
 function createCoin() {
   const marginY = 70;
   return {
@@ -721,7 +791,7 @@ function createCoin() {
     width: 26,
     height: 26,
     vx: -(worldSpeed * (0.7 + Math.random() * 0.4)),
-    seed: Math.random() * Math.PI * 2,
+    seed: Math.random() * Math.PI * 2
   };
 }
 
@@ -760,7 +830,7 @@ function createHazard() {
       vx: -(worldSpeed * (0.9 + Math.random() * 0.4)),
       vy: 0,
       damage: 25,
-      seed: Math.random() * Math.PI * 2,
+      seed: Math.random() * Math.PI * 2
     };
   } else {
     const upOrDown = Math.random() < 0.5 ? -1 : 1;
@@ -773,7 +843,7 @@ function createHazard() {
       vx: -worldSpeed * 0.75,
       vy: upOrDown * 15,
       damage: 18,
-      seed: Math.random() * Math.PI * 2,
+      seed: Math.random() * Math.PI * 2
     };
   }
 }
@@ -804,7 +874,7 @@ function updateHazards(dt) {
   }
 }
 
-// --- PLAYER ---
+// ================== PLAYER & COLLISION ==================
 function updatePlayer(dt) {
   let ax = 0;
   let ay = 0;
@@ -867,17 +937,17 @@ function updatePlayer(dt) {
   }
 }
 
-// --- COLLISION ---
 function rectsIntersect(a, b) {
   const dx = Math.abs(a.x - b.x);
   const dy = Math.abs(a.y - b.y);
   return dx < (a.width + b.width) / 2 && dy < (a.height + b.height) / 2;
 }
 
-// --- UPDATE & LOOP ---
+// ================== UPDATE & GAME LOOP ==================
 function updateGame(dt, worldDt) {
   elapsed += dt;
   distance += worldSpeed * worldDt;
+
   const difficulty = 1 + elapsed / 20;
   level = Math.min(10, Math.floor(difficulty));
   worldSpeed = 160 + difficulty * 40;
@@ -954,24 +1024,33 @@ function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
 }
 
-// --- RENDER ---
+// ================== RENDER ==================
 function drawBackground() {
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, "#012a4a");
-  gradient.addColorStop(0.4, "#014f86");
-  gradient.addColorStop(1, "#01213a");
+  gradient.addColorStop(0, "#023047");
+  gradient.addColorStop(0.35, "#014f86");
+  gradient.addColorStop(0.7, "#013a63");
+  gradient.addColorStop(1, "#001219");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.save();
-  ctx.globalAlpha = 0.15;
+  ctx.globalAlpha = 0.22;
+  const surfGrad = ctx.createLinearGradient(0, 0, 0, 80);
+  surfGrad.addColorStop(0, "rgba(255,255,255,0.8)");
+  surfGrad.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = surfGrad;
+  ctx.fillRect(0, 0, canvas.width, 80);
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = 0.18;
   ctx.fillStyle = "#ffffff";
   for (let i = 0; i < 4; i++) {
-    const offset =
-      ((globalTime * 10 + i * 80) % (canvas.width + 200)) - 200;
+    const offset = ((globalTime * 18 + i * 140) % (canvas.width + 260)) - 260;
     ctx.beginPath();
-    ctx.moveTo(offset, 0);
-    ctx.lineTo(offset + 80, 0);
+    ctx.moveTo(offset, -40);
+    ctx.lineTo(offset + 80, -40);
     ctx.lineTo(offset + 260, canvas.height);
     ctx.lineTo(offset + 180, canvas.height);
     ctx.closePath();
@@ -980,7 +1059,7 @@ function drawBackground() {
   ctx.restore();
 
   ctx.save();
-  ctx.fillStyle = "#001219";
+  ctx.fillStyle = "#00111b";
   ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
   ctx.restore();
 
@@ -995,6 +1074,54 @@ function drawBackground() {
       rock.x + rock.width,
       canvas.height
     );
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.lineWidth = 4;
+  for (const plant of kelpPlants) {
+    const sway = Math.sin(globalTime * 1.5 + plant.swaySeed) * 10;
+    const x = plant.x;
+    const yBottom = plant.baseY;
+    const h = plant.height;
+
+    ctx.beginPath();
+    ctx.moveTo(x, yBottom);
+    ctx.bezierCurveTo(
+      x + sway * 0.3,
+      yBottom - h * 0.3,
+      x + sway,
+      yBottom - h * 0.7,
+      x + sway * 1.2,
+      yBottom - h
+    );
+    ctx.strokeStyle = "rgba(76, 175, 80, 0.9)";
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(x + sway * 1.2, yBottom - h, 5, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(129, 199, 132, 0.9)";
+    ctx.fill();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  ctx.fillStyle = "#bbdefb";
+  for (const f of distantFish) {
+    const size = f.size;
+    ctx.beginPath();
+    if (f.flip === 1) {
+      ctx.moveTo(f.x - size, f.y);
+      ctx.lineTo(f.x + size, f.y - size * 0.6);
+      ctx.lineTo(f.x + size, f.y + size * 0.6);
+    } else {
+      ctx.moveTo(f.x + size, f.y);
+      ctx.lineTo(f.x - size, f.y - size * 0.6);
+      ctx.lineTo(f.x - size, f.y + size * 0.6);
+    }
     ctx.closePath();
     ctx.fill();
   }
@@ -1115,7 +1242,7 @@ function drawPlayer() {
     ctx.translate(player.x, player.y);
     const pulse = 1 + Math.sin(globalTime * 6) * 0.05;
     ctx.globalAlpha = 0.35;
-    ctx.strokeStyle = "rgba(144,238,144,0.9)";
+    ctx.strokeStyle = currentAuraColor;
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.arc(0, 0, player.width * 0.8 * pulse, 0, Math.PI * 2);
@@ -1133,7 +1260,6 @@ function drawPlayer() {
   }
 
   ctx.translate(player.x, player.y);
-
   const angle = (player.vy / player.maxSpeed) * 0.4;
   ctx.rotate(angle);
 
@@ -1178,17 +1304,26 @@ function render() {
   }
 }
 
-// --- INIT ---
-function init() {
+// ================== INIT ==================
+function initGame() {
+  applyCurrentSkin();
+  bindSkinButtons();
   initBackground();
   updatePanels();
   updateHealthBar();
+  updateSkillUI();
+  updateMuteButtonUI();
+  updateOrientationHint();
+
   if (joystickBase && joystickKnob) {
     resetJoystickKnob();
   }
-  updateSkillUI();
-  updateMuteButtonUI();
+
+  window.addEventListener("resize", updateOrientationHint);
+  window.addEventListener("orientationchange", updateOrientationHint);
+
+  requestAnimationFrame(gameLoop);
 }
 
-init();
-requestAnimationFrame(gameLoop);
+// Panggil init setelah semua elemen siap
+window.addEventListener("load", initGame);
