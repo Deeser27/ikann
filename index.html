@@ -13,6 +13,7 @@
   <div class="wrapper">
     <h1>Ninu fishh</h1>
 
+    <!-- HUD ATAS -->
     <div id="hud">
       <div class="hud-group">
         <div class="hud-row">
@@ -33,12 +34,12 @@
       </div>
 
       <div class="hud-group">
-         <button id="pauseBtn">Pause (P)</button>
-          <button id="muteBtn">Mute Musik</button>
+        <button id="pauseBtn">Pause (P)</button>
+        <button id="muteBtn">Mute Musik</button>
+      </div>
     </div>
 
-    </div>
-
+    <!-- CANVAS GAME -->
     <canvas id="game" width="960" height="540"></canvas>
 
     <!-- KONTROL MOBILE: JOYSTICK + SKILL + PAUSE -->
@@ -65,13 +66,21 @@
       <p>
         Gerakkan ikan gemasshhnya dengan <b>WASD</b>, <b>tombol panah</b>,<br />
         atau <b>joystick analog di HP (mode landscape)</b>.<br /><br />
-        Kumpulkann  <b>mutiara emas</b>, hindari<br />
-        <b>ranjau laut sama</b> &amp; <b>ubur-ubur beracun</b>!<br /><br />
+        Kumpulkann <b>mutiara emas</b>, hindari<br />
+        <b>ranjau laut</b> &amp; <b>ubur-ubur beracun</b>!<br /><br />
         Skill:<br />
         - <b>Dash</b>: lari lajuu (J / tombol Dash)<br />
         - <b>Shield</b>: pelindung sementara (K / tombol Shield)<br />
         - <b>Slow</b>: perlambat waktu (L / tombol Slow)
       </p>
+
+      <!-- PEMILIHAN SKIN (2 SKIN) -->
+      <div class="skin-selector">
+        <button id="skinPrevBtn" class="skin-btn">&lt;</button>
+        <span id="skinName">Klasik Biru</span>
+        <button id="skinNextBtn" class="skin-btn">&gt;</button>
+      </div>
+
       <div class="panel-actions">
         <button id="startBtn">Mulaiiii</button>
       </div>
@@ -94,8 +103,8 @@
       <h2>Pause</h2>
       <p>
         Anahhh di pause, takut kalah???<br />
-        Tekn tombol <b>P</b>, tombol <b>Pause</b>,<br />
-        atau <b>Pause di HP</b> untuk lnjut
+        Tekan tombol <b>P</b>, tombol <b>Pause</b>,<br />
+        atau <b>Pause di HP</b> untuk lanjut
       </p>
       <div class="panel-actions">
         <button id="resumeBtn">Lanjut</button>
@@ -108,8 +117,8 @@
     <div class="rotate-card">
       <h2>Putar ke Landscape</h2>
       <p>
-        Biar ga banyak bug sama gampang di puter dlu hp nyaa<br />
-        ke posisi <b>landscape</b> Have fuunn wkwkwkwk
+        Biar ga banyak bug sama gampang, di puter dulu HP-nya<br />
+        ke posisi <b>landscape</b>. Have fuunn wkwkwkwk
       </p>
     </div>
   </div>
@@ -117,7 +126,3 @@
   <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
