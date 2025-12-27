@@ -24,6 +24,7 @@ const muteBtn = document.getElementById("muteBtn");
 const mobilePauseBtn = document.getElementById("mobilePauseBtn");
 const joystickBase = document.getElementById("joystickBase");
 const joystickKnob = document.getElementById("joystickKnob");
+// skillDash di HTML sekarang kita pakai untuk skill HELP
 const skillDashBtn = document.getElementById("skillDash");
 const skillShieldBtn = document.getElementById("skillShield");
 const skillSlowBtn = document.getElementById("skillSlow");
@@ -46,16 +47,22 @@ const fishSkins = [
   {
     name: "Biru",
     src: "fish_biru.png",
-    auraColor: "rgba(100, 181, 246, 0.95)", // biru muda
+    auraColor: "rgba(100, 181, 246, 0.95)",
   },
   {
     name: "Oren",
     src: "fish_oren.png",
-    auraColor: "rgba(255, 183, 77, 0.95)", // oranye
+    auraColor: "rgba(255, 183, 77, 0.95)",
   },
 ];
 
 let currentSkinIndex = 0;
+const skinImages = fishSkins.map((s) => {
+  const img = new Image();
+  img.src = s.src;
+  return img;
+});
+
 const fishImg = new Image();
 let currentAuraColor = fishSkins[0].auraColor;
 
@@ -72,26 +79,30 @@ function changeSkin(delta) {
   applyCurrentSkin();
 }
 
-// hanya pakai pointerdown supaya di HP 1 tap = 1 ganti skin
 function bindSkinButtons() {
   if (skinPrevBtn) {
-    const prevHandler = (e) => {
-      e.preventDefault();
-      changeSkin(-1);
-    };
-    skinPrevBtn.addEventListener("pointerdown", prevHandler, { passive: false });
+    skinPrevBtn.addEventListener(
+      "pointerdown",
+      (e) => {
+        e.preventDefault();
+        changeSkin(-1);
+      },
+      { passive: false }
+    );
   }
-
   if (skinNextBtn) {
-    const nextHandler = (e) => {
-      e.preventDefault();
-      changeSkin(1);
-    };
-    skinNextBtn.addEventListener("pointerdown", nextHandler, { passive: false });
+    skinNextBtn.addEventListener(
+      "pointerdown",
+      (e) => {
+        e.preventDefault();
+        changeSkin(1);
+      },
+      { passive: false }
+    );
   }
 }
 
-// ================== MAP SYSTEM (Kuburan Kapal, Atlantis, Terumbu Karang) ==================
+// ================== MAP SYSTEM ==================
 const maps = [
   {
     id: "ship",
@@ -187,7 +198,7 @@ let currentMap = maps[0];
 function applyCurrentMap() {
   currentMap = maps[currentMapIndex] || maps[0];
   if (mapNameEl) mapNameEl.textContent = currentMap.name;
-  initBackground(); // regenerate dekorasi sesuai map
+  initBackground();
 }
 
 function changeMap(delta) {
@@ -198,22 +209,87 @@ function changeMap(delta) {
 
 function bindMapButtons() {
   if (mapPrevBtn) {
-    const handler = (e) => {
-      e.preventDefault();
-      changeMap(-1);
-    };
-    mapPrevBtn.addEventListener("pointerdown", handler, { passive: false });
+    mapPrevBtn.addEventListener(
+      "pointerdown",
+      (e) => {
+        e.preventDefault();
+        changeMap(-1);
+      },
+      { passive: false }
+    );
   }
   if (mapNextBtn) {
-    const handler = (e) => {
-      e.preventDefault();
-      changeMap(1);
-    };
-    mapNextBtn.addEventListener("pointerdown", handler, { passive: false });
+    mapNextBtn.addEventListener(
+      "pointerdown",
+      (e) => {
+        e.preventDefault();
+        changeMap(1);
+      },
+      { passive: false }
+    );
   }
 }
 
-// ================== AUDIO: SFX & MUSIK ==================
+// ================== ENVIRONMENT VARIANTS (CUACA) ==================
+const envVariants = [
+  {
+    id: "clear",
+    label: "Air Jernih",
+    rayAlpha: 0.18,
+    causticMul: 1.0,
+    tint: null,
+  },
+  {
+    id: "deep",
+    label: "Laut Dalam",
+    rayAlpha: 0.07,
+    causticMul: 0.6,
+    tint: "rgba(0, 10, 40, 0.45)",
+  },
+  {
+    id: "sunset",
+    label: "Senja Laut",
+    rayAlpha: 0.23,
+    causticMul: 0.9,
+    tint: "rgba(255,120,80,0.25)",
+  },
+  {
+    id: "plankton",
+    label: "Laut Plankton",
+    rayAlpha: 0.14,
+    causticMul: 0.8,
+    tint: "rgba(150,255,220,0.18)",
+  },
+];
+
+let currentEnvIndex = 0;
+let currentEnv = envVariants[0];
+let nextEnvChangeScore = 1500; // cuaca ganti tiap 1500 poin
+
+function setRandomEnvironment() {
+  if (!envVariants.length) return;
+  let newIndex = Math.floor(Math.random() * envVariants.length);
+  if (envVariants.length > 1) {
+    let tries = 0;
+    while (newIndex === currentEnvIndex && tries < 5) {
+      newIndex = Math.floor(Math.random() * envVariants.length);
+      tries++;
+    }
+  }
+  currentEnvIndex = newIndex;
+  currentEnv = envVariants[currentEnvIndex];
+  // Tidak ada pesan "Cuaca berubah" lagi, biar teks tidak numpuk.
+}
+
+function updateEnvByScore() {
+  const s = Math.floor(score);
+  while (s >= nextEnvChangeScore) {
+    setRandomEnvironment();
+    nextEnvChangeScore += 1500;
+  }
+}
+
+// ================== AUDIO ==================
 function makeAudio(src, volume = 0.7, playbackRate = 1) {
   const a = new Audio(src);
   a.volume = volume;
@@ -226,7 +302,7 @@ const sfx = {
   coin: makeAudio("sfx_coin.wav", 0.7, 1.1),
   hitMine: makeAudio("sfx_mine.wav", 0.75, 1),
   hitJelly: makeAudio("sfx_jelly.wav", 0.7, 1),
-  dash: makeAudio("sfx_dash.wav", 0.8, 1.1),
+  dash: makeAudio("sfx_dash.wav", 0.8, 1.1), // dipakai untuk HELP juga
   shieldOn: makeAudio("sfx_shield.wav", 0.8, 1),
   slowOn: makeAudio("sfx_slow.wav", 0.8, 0.95),
 };
@@ -266,14 +342,14 @@ function updateMuteButtonUI() {
   muteBtn.textContent = musicMuted ? "Unmute Musik" : "Mute Musik";
 }
 
-// ================== ORIENTASI / ROTATE HINT ==================
+// ================== ORIENTASI ==================
 function updateOrientationHint() {
   if (!rotateHint) return;
   const isPortrait = window.innerHeight >= window.innerWidth;
   rotateHint.style.display = isPortrait ? "flex" : "none";
 }
 
-// ================== STATE GAME & TRANSITION ==================
+// ================== STATE & TRANSISI ==================
 const STATE = {
   MENU: "menu",
   TRANSITION: "transition",
@@ -300,11 +376,22 @@ let backgroundBubbleTimer = 0;
 let lastTimestamp = 0;
 let globalTime = 0;
 
+// pesan mengambang / milestone
+let floatingMessages = [];
+let nextMilestoneScore = 500;
+const milestoneTemplates = [
+  "Wuihh, {score} poin! hoki anjirrr",
+  "baru  {score} poin gausah seneng duluu",
+  "wihh {score} poin, bentar lagi juga kalahh",
+  "Kok bisa {score} point, kamu cit ya",
+  "Bolehlahhh tembus {score}, walau kayanya hoki",
+];
+
 // TRANSISI MASUK MAP
 const mapTransition = {
   active: false,
   time: 0,
-  duration: 2.2, // durasi transisi (detik)
+  duration: 2.2,
 };
 
 function startMapTransition() {
@@ -335,15 +422,37 @@ const joystick = {
   pointerId: null,
   dirX: 0,
   dirY: 0,
-  strength: 0, // 0..1
+  strength: 0,
 };
 
-// Skill system (Dash, Shield, Slow)
+// Skill system (Help, Shield, Slow)
 const skills = {
-  dash: { cooldown: 5, timer: 0 },
+  help: { cooldown: 30, timer: 0 }, // cooldown 30 detik
   shield: { cooldown: 10, timer: 0, active: false, duration: 3, remaining: 0 },
   slow: { cooldown: 12, timer: 0, active: false, duration: 3, remaining: 0 },
 };
+
+// Frenzy
+const frenzy = {
+  active: false,
+  remaining: 0,
+  duration: 6,
+};
+
+function startFrenzy(seconds) {
+  frenzy.active = true;
+  frenzy.remaining = seconds || frenzy.duration;
+  addFloatingMessage("MODE FRENZY!");
+}
+
+function updateFrenzy(dt) {
+  if (!frenzy.active) return;
+  frenzy.remaining -= dt;
+  if (frenzy.remaining <= 0) {
+    frenzy.active = false;
+    frenzy.remaining = 0;
+  }
+}
 
 // ================== OBJEK GAME ==================
 const player = {
@@ -363,6 +472,7 @@ const player = {
 
 const coins = [];
 const hazards = [];
+const chests = [];
 const bubbles = [];
 const bgRocks = [];
 const kelpPlants = [];
@@ -371,6 +481,36 @@ const corals = [];
 const sandDecor = [];
 const shipWrecks = [];
 const ruins = [];
+
+// Sidekick (teman ikan kecil)
+const sidekick = {
+  active: false,
+  x: 0,
+  y: 0,
+  offsetX: -60,
+  offsetY: 25,
+  life: 0,
+  maxLife: 10,
+  canBlockHit: false,
+  hitFlashTimer: 0,
+};
+let sidekickSpawnTimer = 0;
+
+// Ikan bantuan (HELP skill)
+const helpFish = {
+  active: false,
+  x: 0,
+  y: 0,
+  width: 90,
+  height: 60,
+  remaining: 0,
+  state: "enter", // "enter" -> "follow" -> "exit"
+};
+
+let waveTimer = 0;
+let nextWaveDelay = 14;
+let chestTimer = 0;
+let nextChestTime = 16;
 
 // ================== INPUT KEYBOARD ==================
 window.addEventListener(
@@ -406,7 +546,7 @@ window.addEventListener(
 
     if (key === "j") {
       e.preventDefault();
-      attemptDash();
+      attemptHelp();
     }
     if (key === "k") {
       e.preventDefault();
@@ -443,7 +583,7 @@ window.addEventListener(
   { passive: false }
 );
 
-// ================== JOYSTICK ANALOG (MOBILE) ==================
+// ================== JOYSTICK ANALOG ==================
 if (joystickBase && joystickKnob) {
   const opts = { passive: false };
   joystickBase.addEventListener("pointerdown", onJoystickDown, opts);
@@ -549,10 +689,11 @@ function bindMobileButton(btn, handler) {
   });
 }
 
-// ================== START RUN HELPER ==================
+// ================== START RUN ==================
 function startRun() {
   resetGame();
-  initBackground(); // randomisasi dekor baru
+  setRandomEnvironment(); // tidak ada pesan
+  initBackground();
   startMapTransition();
   playBgMusic();
 }
@@ -565,13 +706,11 @@ if (startBtn) {
   });
 }
 
-// 🔴 PERUBAHAN DI SINI: retry sekarang BALIK KE MENU, bukan langsung startRun()
 if (retryBtn) {
   retryBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    resetGame();        // reset status game
-    setState(STATE.MENU); // kembali ke menu → bisa pilih map & skin lagi
-    // musik sudah di-stop saat gameOver(), jadi di sini tidak perlu apa-apa
+    resetGame();
+    setState(STATE.MENU);
   });
 }
 
@@ -589,13 +728,12 @@ if (pauseBtn) {
   });
 }
 
-// Mobile pause
 if (mobilePauseBtn) {
   bindMobileButton(mobilePauseBtn, togglePause);
 }
 
-// Skill buttons mobile
-bindMobileButton(skillDashBtn, attemptDash);
+// Skill mobile
+bindMobileButton(skillDashBtn, attemptHelp);
 bindMobileButton(skillShieldBtn, attemptShield);
 bindMobileButton(skillSlowBtn, attemptSlow);
 
@@ -607,11 +745,9 @@ if (muteBtn) {
       e.preventDefault();
       musicMuted = !musicMuted;
       bgMusic.muted = musicMuted;
-
       if (!musicMuted && currentState === STATE.PLAYING && bgMusic.paused) {
         playBgMusic();
       }
-
       updateMuteButtonUI();
     },
     { passive: false }
@@ -638,7 +774,6 @@ function updatePanels() {
     gameOverPanel.classList.add("hidden");
     pausePanel.classList.remove("hidden");
   } else {
-    // PLAYING & TRANSITION -> panel hilang
     menuPanel.classList.add("hidden");
     gameOverPanel.classList.add("hidden");
     pausePanel.classList.add("hidden");
@@ -663,6 +798,20 @@ function gameOver() {
   stopBgMusic();
 }
 
+// ================== RESET GAME ==================
+function resetSidekick() {
+  sidekick.active = false;
+  sidekick.life = 0;
+  sidekick.canBlockHit = false;
+  sidekick.hitFlashTimer = 0;
+}
+
+function resetHelpFish() {
+  helpFish.active = false;
+  helpFish.remaining = 0;
+  helpFish.state = "enter";
+}
+
 function resetGame() {
   player.x = canvas.width * 0.2;
   player.y = canvas.height / 2;
@@ -673,6 +822,7 @@ function resetGame() {
 
   coins.length = 0;
   hazards.length = 0;
+  chests.length = 0;
   bubbles.length = 0;
 
   elapsed = 0;
@@ -686,13 +836,31 @@ function resetGame() {
   bubbleTimer = 0;
   backgroundBubbleTimer = 0;
 
-  skills.dash.timer = 0;
+  skills.help.timer = 0;
   skills.shield.timer = 0;
   skills.shield.active = false;
   skills.shield.remaining = 0;
   skills.slow.timer = 0;
   skills.slow.active = false;
   skills.slow.remaining = 0;
+
+  frenzy.active = false;
+  frenzy.remaining = 0;
+
+  floatingMessages.length = 0;
+  nextMilestoneScore = 500;
+
+  sidekickSpawnTimer = 0;
+  resetSidekick();
+
+  resetHelpFish();
+
+  waveTimer = 0;
+  nextWaveDelay = 14;
+  chestTimer = 0;
+  nextChestTime = 16;
+
+  nextEnvChangeScore = 1500; // cuaca mulai di 1500
 
   scoreEl.textContent = "0";
   levelEl.textContent = "1";
@@ -723,12 +891,20 @@ function updateHealthBar() {
 function damagePlayer(amount) {
   if (player.invincibleTimer > 0 || currentState !== STATE.PLAYING) return;
 
-  let finalDamage = amount;
+  // Shield = full kebal
   if (skills.shield.active) {
-    finalDamage *= 0.3;
+    return;
   }
 
-  player.health -= finalDamage;
+  // Sidekick bisa menahan 1 hit
+  if (sidekick.active && sidekick.canBlockHit) {
+    sidekick.canBlockHit = false;
+    sidekick.hitFlashTimer = 0.4;
+    addFloatingMessage("Teman ikan menahan serangan!");
+    return;
+  }
+
+  player.health -= amount;
   if (player.health < 0) player.health = 0;
   player.invincibleTimer = 0.4;
   updateHealthBar();
@@ -739,36 +915,12 @@ function damagePlayer(amount) {
 }
 
 // ================== SKILLS ==================
-function attemptDash() {
-  if (skills.dash.timer > 0 || currentState !== STATE.PLAYING) return;
+function attemptHelp() {
+  if (skills.help.timer > 0 || currentState !== STATE.PLAYING) return;
+  if (helpFish.active) return;
 
-  let dirX = joystick.dirX;
-  let dirY = joystick.dirY;
-
-  if (dirX === 0 && dirY === 0) {
-    if (keys["arrowleft"] || keys["a"]) dirX = -1;
-    else if (keys["arrowright"] || keys["d"]) dirX = 1;
-    if (keys["arrowup"] || keys["w"]) dirY = -1;
-    else if (keys["arrowdown"] || keys["s"]) dirY = 1;
-  }
-
-  if (dirX === 0 && dirY === 0) {
-    const speed = Math.hypot(player.vx, player.vy);
-    if (speed > 10) {
-      dirX = player.vx / speed;
-      dirY = player.vy / speed;
-    } else {
-      dirX = 1;
-      dirY = 0;
-    }
-  }
-
-  const dashPower = 650;
-  player.vx += dirX * dashPower;
-  player.vy += dirY * dashPower;
-
-  player.invincibleTimer = Math.max(player.invincibleTimer, 0.6);
-  skills.dash.timer = skills.dash.cooldown;
+  spawnHelpFish();
+  skills.help.timer = skills.help.cooldown;
 
   playSfx(sfx.dash);
   flashSkillButton(skillDashBtn);
@@ -810,7 +962,7 @@ function attemptSlow() {
 }
 
 function updateSkills(dt) {
-  for (const key of ["dash", "shield", "slow"]) {
+  for (const key of ["help", "shield", "slow"]) {
     if (skills[key].timer > 0) {
       skills[key].timer -= dt;
       if (skills[key].timer < 0) skills[key].timer = 0;
@@ -837,7 +989,12 @@ function updateSkills(dt) {
 }
 
 function updateSkillUI() {
-  updateSkillButton(skillDashBtn, skills.dash.timer, false, "Dash (J)");
+  updateSkillButton(
+    skillDashBtn,
+    skills.help.timer,
+    helpFish.active,
+    "Help (J)"
+  );
   updateSkillButton(
     skillShieldBtn,
     skills.shield.timer,
@@ -887,12 +1044,10 @@ function initBackground() {
   shipWrecks.length = 0;
   ruins.length = 0;
 
-  // batu
   for (let i = 0; i < 8; i++) {
     bgRocks.push(createRock(Math.random() * canvas.width));
   }
 
-  // kelp
   for (let i = 0; i < 7; i++) {
     kelpPlants.push({
       x: Math.random() * canvas.width,
@@ -903,7 +1058,6 @@ function initBackground() {
     });
   }
 
-  // ikan kecil jauh
   for (let i = 0; i < 10; i++) {
     distantFish.push({
       x: Math.random() * canvas.width,
@@ -914,8 +1068,7 @@ function initBackground() {
     });
   }
 
-  // karang
-  const palettes =
+  const mPalettes =
     (m.coralPalettes && m.coralPalettes.length > 0
       ? m.coralPalettes
       : [
@@ -924,7 +1077,7 @@ function initBackground() {
         ]);
   const coralCount = m.coralCount || 0;
   for (let i = 0; i < coralCount; i++) {
-    const c = palettes[Math.floor(Math.random() * palettes.length)];
+    const c = mPalettes[Math.floor(Math.random() * mPalettes.length)];
     const size = 25 + Math.random() * 35;
     corals.push({
       x: Math.random() * canvas.width,
@@ -938,7 +1091,6 @@ function initBackground() {
     });
   }
 
-  // dekorasi pasir
   const decorCount = m.sandDecorCount || 0;
   for (let i = 0; i < decorCount; i++) {
     sandDecor.push({
@@ -952,7 +1104,6 @@ function initBackground() {
     });
   }
 
-  // kuburan kapal: bangkai kapal / jangkar
   const shipCount = m.shipWreckCount || 0;
   for (let i = 0; i < shipCount; i++) {
     const variantRand = Math.random();
@@ -970,7 +1121,6 @@ function initBackground() {
     });
   }
 
-  // Atlantis: pilar & gerbang
   const ruinCount = m.ruinCount || 0;
   for (let i = 0; i < ruinCount; i++) {
     const type = Math.random() < 0.5 ? "pillar" : "arch";
@@ -998,7 +1148,6 @@ function createRock(x) {
 }
 
 function updateBackground(dt) {
-  // batu
   for (const rock of bgRocks) {
     rock.x -= worldSpeed * rock.speedFactor * dt;
     if (rock.x + rock.width < -60) {
@@ -1009,7 +1158,6 @@ function updateBackground(dt) {
     }
   }
 
-  // kelp
   for (const k of kelpPlants) {
     k.x -= worldSpeed * k.speedFactor * dt;
     if (k.x < -60) {
@@ -1019,7 +1167,6 @@ function updateBackground(dt) {
     }
   }
 
-  // ikan jauh
   for (const f of distantFish) {
     f.x -= worldSpeed * f.speedFactor * dt;
     if (f.x < -40) {
@@ -1030,7 +1177,6 @@ function updateBackground(dt) {
     }
   }
 
-  // karang
   for (const c of corals) {
     c.x -= worldSpeed * c.speedFactor * dt;
     if (c.x < -80) {
@@ -1042,7 +1188,6 @@ function updateBackground(dt) {
     }
   }
 
-  // dekorasi pasir
   for (const d of sandDecor) {
     d.x -= worldSpeed * d.speedFactor * dt;
     if (d.x < -40) {
@@ -1055,7 +1200,6 @@ function updateBackground(dt) {
     }
   }
 
-  // bangkai kapal
   for (const s of shipWrecks) {
     s.x -= worldSpeed * s.speedFactor * dt;
     if (s.x < -150) {
@@ -1068,7 +1212,6 @@ function updateBackground(dt) {
     }
   }
 
-  // reruntuhan Atlantis
   for (const r of ruins) {
     r.x -= worldSpeed * r.speedFactor * dt;
     if (r.x < -120) {
@@ -1106,7 +1249,7 @@ function updateBubbles(dt) {
   }
 }
 
-// ================== COINS & HAZARDS ==================
+// ================== COINS, HAZARDS, CHESTS ==================
 function createCoin() {
   const marginY = 70;
   return {
@@ -1126,6 +1269,19 @@ function updateCoins(dt) {
     c.x += c.vx * dt;
     c.y += Math.sin(globalTime * 2 + c.seed) * 8 * dt;
 
+    // magnet koin ke pemain saat sidekick aktif
+    if (sidekick.active) {
+      const dx = player.x - c.x;
+      const dy = player.y - c.y;
+      const dist = Math.hypot(dx, dy);
+      const magnetRadius = 120;
+      if (dist < magnetRadius && dist > 0) {
+        const pull = (magnetRadius - dist) / magnetRadius;
+        c.x += (dx / dist) * pull * dt * 120;
+        c.y += (dy / dist) * pull * dt * 120;
+      }
+    }
+
     if (c.x < -50) {
       coins.splice(i, 1);
       continue;
@@ -1133,7 +1289,9 @@ function updateCoins(dt) {
 
     if (rectsIntersect(player, c)) {
       coinsCollected++;
-      score += 35;
+      let coinScore = 35;
+      if (frenzy.active) coinScore *= 2;
+      score += coinScore;
       playSfx(sfx.coin);
       coins.splice(i, 1);
     }
@@ -1153,7 +1311,7 @@ function createHazard() {
       height: 42,
       vx: -(worldSpeed * (0.9 + Math.random() * 0.4)),
       vy: 0,
-      damage: 25,
+      damage: 15, // damage dikurangi
       seed: Math.random() * Math.PI * 2,
     };
   } else {
@@ -1166,7 +1324,7 @@ function createHazard() {
       height: 70,
       vx: -worldSpeed * 0.75,
       vy: upOrDown * 15,
-      damage: 18,
+      damage: 10, // damage dikurangi
       seed: Math.random() * Math.PI * 2,
     };
   }
@@ -1189,6 +1347,14 @@ function updateHazards(dt) {
     }
 
     if (rectsIntersect(player, h)) {
+      // Saat frenzy: hazard hancur tanpa damage
+      if (frenzy.active) {
+        if (h.type === "mine") playSfx(sfx.hitMine);
+        else playSfx(sfx.hitJelly);
+        hazards.splice(i, 1);
+        continue;
+      }
+
       if (h.type === "mine") playSfx(sfx.hitMine);
       else playSfx(sfx.hitJelly);
 
@@ -1196,6 +1362,257 @@ function updateHazards(dt) {
       hazards.splice(i, 1);
     }
   }
+}
+
+// Peti harta
+function createChest() {
+  return {
+    x: canvas.width + 70,
+    y: canvas.height - 65,
+    width: 40,
+    height: 30,
+    opened: false,
+  };
+}
+
+function applyChestReward() {
+  const r = Math.random();
+  if (r < 0.4) {
+    const bonusCoins = 10;
+    coinsCollected += bonusCoins;
+    score += bonusCoins * 40;
+    addFloatingMessage("Jackpot koin!");
+    playSfx(sfx.coin);
+  } else if (r < 0.75) {
+    const heal = 35;
+    player.health = Math.min(player.maxHealth, player.health + heal);
+    updateHealthBar();
+    addFloatingMessage("HP pulih!");
+  } else {
+    startFrenzy(7);
+  }
+}
+
+function updateChests(dt) {
+  for (let i = chests.length - 1; i >= 0; i--) {
+    const c = chests[i];
+    c.x -= worldSpeed * 0.6 * dt;
+
+    if (c.x < -80) {
+      chests.splice(i, 1);
+      continue;
+    }
+
+    if (!c.opened && rectsIntersect(player, c)) {
+      c.opened = true;
+      applyChestReward();
+      chests.splice(i, 1);
+    }
+  }
+}
+
+// ================== SIDEKICK ==================
+function spawnSidekick() {
+  sidekick.active = true;
+  sidekick.x = player.x + sidekick.offsetX;
+  sidekick.y = player.y + sidekick.offsetY;
+  sidekick.life = 0;
+  sidekick.maxLife = 12;
+  sidekick.canBlockHit = true;
+  sidekick.hitFlashTimer = 0;
+  addFloatingMessage("Teman ikan datang!");
+}
+
+function updateSidekick(dt) {
+  if (!sidekick.active) return;
+
+  sidekick.life += dt;
+
+  const targetX = player.x + sidekick.offsetX;
+  const targetY = player.y + sidekick.offsetY;
+  sidekick.x += (targetX - sidekick.x) * dt * 4;
+  sidekick.y += (targetY - sidekick.y) * dt * 4;
+
+  if (sidekick.hitFlashTimer > 0) {
+    sidekick.hitFlashTimer -= dt;
+  }
+
+  if (
+    sidekick.life >= sidekick.maxLife ||
+    (!sidekick.canBlockHit && sidekick.life >= sidekick.maxLife * 0.5)
+  ) {
+    sidekick.active = false;
+  }
+}
+
+// ================== HELP FISH ==================
+function spawnHelpFish() {
+  helpFish.active = true;
+  helpFish.remaining = 5; // aktif 5 detik
+  helpFish.state = "enter";
+  helpFish.x = player.x;
+  helpFish.y = -helpFish.height; // mulai dari atas layar
+}
+
+function updateHelpFish(dt) {
+  if (!helpFish.active) return;
+
+  helpFish.remaining -= dt;
+  if (helpFish.remaining <= 0 && helpFish.state !== "exit") {
+    helpFish.state = "exit"; // mulai naik ke atas
+  }
+
+  const followOffsetX = 70;  // di samping pemain
+  const followOffsetY = -20; // sedikit di atas
+
+  if (helpFish.state === "enter") {
+    // turun dari atas menuju posisi samping pemain
+    const targetX = player.x + followOffsetX;
+    const targetY = player.y + followOffsetY;
+
+    helpFish.x += (targetX - helpFish.x) * dt * 4;
+    helpFish.y += (targetY - helpFish.y) * dt * 4;
+
+    const dist = Math.hypot(targetX - helpFish.x, targetY - helpFish.y);
+    if (dist < 10) {
+      helpFish.state = "follow";
+    }
+  } else if (helpFish.state === "follow") {
+    // jalan di samping pemain
+    const targetX = player.x + followOffsetX;
+    const targetY = player.y + followOffsetY;
+
+    helpFish.x += (targetX - helpFish.x) * dt * 6;
+    helpFish.y += (targetY - helpFish.y) * dt * 6;
+  } else if (helpFish.state === "exit") {
+    // kembali naik ke atas
+    helpFish.y -= 280 * dt;
+    if (helpFish.y < -helpFish.height - 50) {
+      resetHelpFish();
+      return;
+    }
+  }
+
+  // Hancurkan obstacle di sekitar kita (sekitar ikan bantuan)
+  const radius = Math.max(helpFish.width, helpFish.height);
+  for (let i = hazards.length - 1; i >= 0; i--) {
+    const h = hazards[i];
+    const dx = helpFish.x - h.x;
+    const dy = helpFish.y - h.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < radius) {
+      hazards.splice(i, 1);
+      spawnBubble(h.x, h.y);
+    }
+  }
+}
+
+// ================== WAVE SYSTEM ==================
+function spawnCoinWave() {
+  const centerY = canvas.height * (0.35 + Math.random() * 0.3);
+  const amplitude = canvas.height * 0.25;
+  const count = 18;
+  const baseX = canvas.width + 60;
+  const spacing = 45;
+
+  for (let i = 0; i < count; i++) {
+    const angle = i * 0.4;
+    const y = centerY + Math.sin(angle) * amplitude * 0.4;
+    coins.push({
+      x: baseX + i * spacing,
+      y,
+      width: 26,
+      height: 26,
+      vx: -worldSpeed * 0.85,
+      seed: Math.random() * Math.PI * 2,
+    });
+  }
+
+  addFloatingMessage("Wave koin datang!");
+}
+
+function spawnJellyWave() {
+  const rows = 3;
+  const cols = 7;
+  const spacingX = 70;
+  const spacingY = 70;
+  const startX = canvas.width + 80;
+  const topY = 80 + Math.random() * 60;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      hazards.push({
+        type: "jelly",
+        x: startX + c * spacingX,
+        y: topY + r * spacingY,
+        width: 32,
+        height: 70,
+        vx: -worldSpeed * 0.75,
+        vy: (Math.random() < 0.5 ? -1 : 1) * 15,
+        damage: 10,
+        seed: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+
+  addFloatingMessage("Zona ubur-ubur!");
+}
+
+// ================== MESSAGES ==================
+function addFloatingMessage(text) {
+  // Supaya tidak ada tulisan double, selalu hanya 1 message aktif
+  floatingMessages.length = 0;
+  floatingMessages.push({
+    text,
+    x: canvas.width / 2,
+    y: 90,
+    life: 0,
+    maxLife: 2.5,
+  });
+}
+
+function updateFloatingMessages(dt) {
+  for (let i = floatingMessages.length - 1; i >= 0; i--) {
+    const m = floatingMessages[i];
+    m.life += dt;
+    m.y -= dt * 12;
+    if (m.life >= m.maxLife) {
+      floatingMessages.splice(i, 1);
+    }
+  }
+}
+
+function drawFloatingMessages() {
+  if (!floatingMessages.length) return;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.font = "20px sans-serif";
+  for (const m of floatingMessages) {
+    const t = m.life / m.maxLife;
+    const alpha = t < 0.3 ? t / 0.3 : 1 - (t - 0.3) / 0.7;
+    const a = Math.max(0, alpha) * 0.95;
+
+    ctx.globalAlpha = a;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(m.text, m.x, m.y);
+
+    ctx.globalAlpha = a * 0.5;
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillText(m.text, m.x + 1.5, m.y + 1.5);
+  }
+  ctx.restore();
+}
+
+function checkScoreMilestones() {
+  if (score < nextMilestoneScore) return;
+
+  const templ =
+    milestoneTemplates[
+      Math.floor(Math.random() * milestoneTemplates.length)
+    ];
+  const msg = templ.replace("{score}", nextMilestoneScore);
+  addFloatingMessage(msg);
+  nextMilestoneScore += 500;
 }
 
 // ================== PLAYER & COLLISION ==================
@@ -1307,24 +1724,57 @@ function updateGame(dt, worldDt) {
     spawnBubble(Math.random() * canvas.width, canvas.height + 10);
   }
 
+  // Sidekick spawn timer
+  sidekickSpawnTimer += dt;
+  if (!sidekick.active && sidekickSpawnTimer > 18) {
+    spawnSidekick();
+    sidekickSpawnTimer = 0;
+  }
+
+  // Wave timer
+  waveTimer += dt;
+  if (waveTimer >= nextWaveDelay) {
+    waveTimer = 0;
+    nextWaveDelay = 12 + Math.random() * 10;
+    if (Math.random() < 0.5) spawnCoinWave();
+    else spawnJellyWave();
+  }
+
+  // Chest timer
+  chestTimer += dt;
+  if (chestTimer >= nextChestTime) {
+    chestTimer = 0;
+    nextChestTime = 14 + Math.random() * 12;
+    chests.push(createChest());
+    addFloatingMessage("Peti harta muncul!");
+  }
+
   updatePlayer(dt);
   updateCoins(worldDt);
   updateHazards(worldDt);
+  updateChests(worldDt);
+  updateSidekick(dt);
+  updateHelpFish(worldDt);
 
-  score += dt * (5 + level * 2);
+  let baseScore = dt * (5 + level * 2);
+  if (frenzy.active) baseScore *= 2;
+  score += baseScore;
+
   scoreEl.textContent = Math.floor(score);
   levelEl.textContent = level.toString();
 
+  updateEnvByScore();
   updateSkills(dt);
+  checkScoreMilestones();
 }
 
 function update(dt) {
   globalTime += dt;
+  updateFrenzy(dt);
 
   const slowMul = skills.slow.active ? 0.4 : 1;
   let worldDt = dt * slowMul;
 
-  // kalau sedang transisi, update timer transisi & pelankan gerakan background
   if (currentState === STATE.TRANSITION) {
     updateMapTransition(dt);
     worldDt *= 0.4;
@@ -1335,12 +1785,10 @@ function update(dt) {
   if (currentState === STATE.PLAYING) {
     updateGame(dt, worldDt);
   } else if (currentState === STATE.MENU) {
-    // ikan idle di menu
     const centerY = canvas.height / 2;
     player.x = canvas.width * 0.25 + Math.sin(globalTime) * 10;
     player.y = centerY + Math.sin(globalTime * 1.5) * 15;
   } else if (currentState === STATE.TRANSITION) {
-    // ikan pelan2 nongol di posisi main, cuma goyang dikit
     const centerY = canvas.height / 2;
     player.x = canvas.width * 0.25;
     player.y = centerY + Math.sin(globalTime * 1.5) * 10;
@@ -1349,6 +1797,7 @@ function update(dt) {
   }
 
   updateBubbles(worldDt);
+  updateFloatingMessages(dt);
 }
 
 function gameLoop(timestamp) {
@@ -1366,7 +1815,6 @@ function gameLoop(timestamp) {
 function drawBackground() {
   const m = currentMap || maps[0];
 
-  // gradient laut (atas)
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
   if (m.gradientStops && m.gradientStops.length) {
     for (const stop of m.gradientStops) {
@@ -1381,7 +1829,7 @@ function drawBackground() {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // permukaan air glow
+  // permukaan air
   ctx.save();
   ctx.globalAlpha = 0.22;
   const surfGrad = ctx.createLinearGradient(0, 0, 0, 90);
@@ -1391,9 +1839,9 @@ function drawBackground() {
   ctx.fillRect(0, 0, canvas.width, 90);
   ctx.restore();
 
-  // sun rays
+  // sun rays (dipengaruhi env)
   ctx.save();
-  ctx.globalAlpha = 0.18;
+  ctx.globalAlpha = currentEnv.rayAlpha;
   ctx.fillStyle = "#ffffff";
   for (let i = 0; i < 4; i++) {
     const offset =
@@ -1408,10 +1856,11 @@ function drawBackground() {
   }
   ctx.restore();
 
-  // efek cahaya air (caustic)
-  ctx.save();
-  const caAlpha = m.causticAlpha ?? 0.07;
+  // caustic light
+  const mCa = m.causticAlpha ?? 0.07;
+  const caAlpha = mCa * (currentEnv.causticMul || 1);
   const caColor = m.causticColor ?? "rgba(255,255,255,0.6)";
+  ctx.save();
   ctx.globalAlpha = caAlpha;
   ctx.lineWidth = 2;
   ctx.strokeStyle = caColor;
@@ -1430,24 +1879,20 @@ function drawBackground() {
   }
   ctx.restore();
 
-  // OFFSET TRANSISI (bawah dunia naik dari bawah)
   let bottomOffsetY = 0;
   if (currentState === STATE.TRANSITION) {
-    const p = getTransitionProgress(); // 0 -> 1
-    bottomOffsetY = (1 - p) * canvas.height * 0.6; // awalnya di bawah, naik ke posisi normal
+    const p = getTransitionProgress();
+    bottomOffsetY = (1 - p) * canvas.height * 0.6;
   }
 
-  // semua objek bawah laut kita translate dengan offset ini
   ctx.save();
   ctx.translate(0, bottomOffsetY);
 
-  // dasar laut
   ctx.save();
   ctx.fillStyle = m.floorColor || "#00111b";
   ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
   ctx.restore();
 
-  // batu
   ctx.save();
   ctx.fillStyle = m.rockColor || "#001b2e";
   for (const rock of bgRocks) {
@@ -1464,17 +1909,14 @@ function drawBackground() {
   }
   ctx.restore();
 
-  // bangkai kapal (Kuburan Kapal)
   if (currentMap.id === "ship") {
     drawShipWrecks(m);
   }
 
-  // reruntuhan (Atlantis)
   if (currentMap.id === "atlantis") {
     drawRuins(m);
   }
 
-  // karang
   ctx.save();
   for (const c of corals) {
     const x = c.x;
@@ -1513,7 +1955,6 @@ function drawBackground() {
   }
   ctx.restore();
 
-  // dekorasi pasir
   ctx.save();
   for (const d of sandDecor) {
     ctx.save();
@@ -1555,7 +1996,6 @@ function drawBackground() {
   }
   ctx.restore();
 
-  // kelp
   ctx.save();
   ctx.lineWidth = 4;
   for (const plant of kelpPlants) {
@@ -1584,7 +2024,6 @@ function drawBackground() {
   }
   ctx.restore();
 
-  // ikan kecil jauh
   ctx.save();
   ctx.globalAlpha = m.distantFishAlpha ?? 0.45;
   ctx.fillStyle = m.distantFishColor || "#bbdefb";
@@ -1606,9 +2045,32 @@ function drawBackground() {
   ctx.restore();
 
   ctx.restore(); // end translate bottomOffsetY
+
+  // partikel plankton / titik cahaya untuk varian tertentu
+  if (currentEnv.id === "plankton" || currentEnv.id === "deep") {
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = "#e0f7fa";
+    for (let i = 0; i < 80; i++) {
+      const x =
+        (((i * 73) + globalTime * 40) % (canvas.width + 40)) - 20;
+      const y = (i * 97) % (canvas.height + 40);
+      ctx.beginPath();
+      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // overlay tint env
+  if (currentEnv.tint) {
+    ctx.save();
+    ctx.fillStyle = currentEnv.tint;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
 }
 
-// bangkai kapal: hull / mast / anchor
 function drawShipWrecks(map) {
   if (!shipWrecks.length) return;
   ctx.save();
@@ -1692,7 +2154,6 @@ function drawShipWrecks(map) {
   ctx.restore();
 }
 
-// reruntuhan Atlantis: pilar & arch + kristal
 function drawRuins(map) {
   if (!ruins.length) return;
   ctx.save();
@@ -1905,8 +2366,104 @@ function drawHazards() {
   }
 }
 
+function drawChests() {
+  for (const c of chests) {
+    ctx.save();
+    ctx.translate(c.x, c.y);
+
+    const w = c.width;
+    const h = c.height;
+
+    ctx.fillStyle = "#6d4c41";
+    ctx.fillRect(-w / 2, -h, w, h);
+
+    ctx.fillStyle = "#8d6e63";
+    ctx.fillRect(-w / 2, -h, w, h * 0.3);
+
+    ctx.fillStyle = "#3e2723";
+    ctx.fillRect(-w / 2, -h + h * 0.3, w, 3);
+
+    ctx.fillStyle = "#ffeb3b";
+    ctx.fillRect(-4, -h * 0.4, 8, h * 0.5);
+
+    ctx.beginPath();
+    ctx.arc(0, -h * 0.05, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "#fbc02d";
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+function drawSidekick() {
+  if (!sidekick.active) return;
+
+  ctx.save();
+  ctx.translate(sidekick.x, sidekick.y);
+
+  const scale = 0.6;
+  ctx.scale(scale, scale);
+
+  let alpha = 1;
+  if (sidekick.hitFlashTimer > 0) {
+    alpha = 0.4 + Math.sin(sidekick.hitFlashTimer * 30) * 0.3;
+  }
+
+  ctx.globalAlpha = alpha;
+
+  ctx.fillStyle = "#b3e5fc";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 40, 24, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(-40, 0);
+  ctx.lineTo(-60, -15);
+  ctx.lineTo(-60, 15);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(10, -6, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#000";
+  ctx.beginPath();
+  ctx.arc(12, -6, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawHelpFish() {
+  if (!helpFish.active) return;
+
+  ctx.save();
+  ctx.translate(helpFish.x, helpFish.y);
+
+  // helper pakai skin kebalikan pemain
+  const helperIndex = (currentSkinIndex + 1) % fishSkins.length;
+  const img = skinImages[helperIndex];
+  const w = helpFish.width;
+  const h = helpFish.height;
+
+  const angle = Math.sin(globalTime * 2) * 0.15;
+  ctx.rotate(angle);
+
+  if (img && img.complete && img.naturalWidth) {
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  } else {
+    ctx.fillStyle = "#ffcc80";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 function drawPlayer() {
-  // aura shield
   if (skills.shield.active) {
     ctx.save();
     ctx.translate(player.x, player.y);
@@ -1930,6 +2487,13 @@ function drawPlayer() {
   }
 
   ctx.translate(player.x, player.y);
+
+  let scale = 1;
+  if (frenzy.active) {
+    scale = 1.15;
+  }
+  ctx.scale(scale, scale);
+
   const angle = (player.vy / player.maxSpeed) * 0.4;
   ctx.rotate(angle);
 
@@ -1964,6 +2528,9 @@ function render() {
   drawBubbles();
   drawCoins();
   drawHazards();
+  drawChests();
+  drawHelpFish();
+  drawSidekick();
   drawPlayer();
 
   if (skills.slow.active) {
@@ -1973,11 +2540,18 @@ function render() {
     ctx.restore();
   }
 
-  // overlay transisi: fade dari hitam + teks "Menyelam ke ..."
+  if (frenzy.active) {
+    ctx.save();
+    const t = Math.max(0, frenzy.remaining / frenzy.duration);
+    ctx.globalAlpha = 0.18 + t * 0.15;
+    ctx.fillStyle = "rgba(255, 238, 88, 0.6)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
+
   if (currentState === STATE.TRANSITION) {
     const p = getTransitionProgress();
 
-    // fade hitam di awal
     const fadeAlpha = Math.max(0, 1 - p * 1.5);
     if (fadeAlpha > 0.01) {
       ctx.save();
@@ -1987,10 +2561,9 @@ function render() {
       ctx.restore();
     }
 
-    // teks info map
     let textAlpha;
-    if (p < 0.4) textAlpha = p / 0.4; // fade in
-    else if (p < 0.8) textAlpha = 1 - (p - 0.4) / 0.4; // fade out
+    if (p < 0.4) textAlpha = p / 0.4;
+    else if (p < 0.8) textAlpha = 1 - (p - 0.4) / 0.4;
     else textAlpha = 0;
 
     if (textAlpha > 0.02) {
@@ -2007,6 +2580,8 @@ function render() {
       ctx.restore();
     }
   }
+
+  drawFloatingMessages();
 }
 
 // ================== INIT ==================
@@ -2014,7 +2589,7 @@ function initGame() {
   applyCurrentSkin();
   bindSkinButtons();
   bindMapButtons();
-  applyCurrentMap(); // set map + dekorasi awal
+  applyCurrentMap();
 
   updatePanels();
   updateHealthBar();
