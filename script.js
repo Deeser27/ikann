@@ -95,7 +95,7 @@ function bindSkinButtons() {
 const maps = [
   {
     id: "ship",
-    name: "Kapoal pecaj",
+    name: "Kuburan Kapal",
     gradientStops: [
       { pos: 0.0, color: "#001219" },
       { pos: 0.3, color: "#003049" },
@@ -116,7 +116,6 @@ const maps = [
     sandDecorCount: 6,
     distantFishColor: "#90caf9",
     distantFishAlpha: 0.25,
-    // khusus kuburan kapal
     shipWoodColor: "#5d4037",
     shipWoodHighlightColor: "#8d6e63",
     shipMetalColor: "#90a4ae",
@@ -125,7 +124,7 @@ const maps = [
   },
   {
     id: "atlantis",
-    name: "atlantiss",
+    name: "Atlantis",
     gradientStops: [
       { pos: 0.0, color: "#001b2e" },
       { pos: 0.25, color: "#004e7c" },
@@ -146,7 +145,6 @@ const maps = [
     sandDecorCount: 10,
     distantFishColor: "#e0f7fa",
     distantFishAlpha: 0.45,
-    // pilar & gerbang Atlantis
     ruinMainColor: "#cfd8dc",
     ruinHighlightColor: "#eceff1",
     crystalColor: "#80deea",
@@ -155,7 +153,7 @@ const maps = [
   },
   {
     id: "reef",
-    name: "terummbu krng",
+    name: "Terumbu Karang",
     gradientStops: [
       { pos: 0.0, color: "#290c46" },
       { pos: 0.25, color: "#3b1c65" },
@@ -275,9 +273,10 @@ function updateOrientationHint() {
   rotateHint.style.display = isPortrait ? "flex" : "none";
 }
 
-// ================== STATE GAME ==================
+// ================== STATE GAME & TRANSITION ==================
 const STATE = {
   MENU: "menu",
+  TRANSITION: "transition",
   PLAYING: "playing",
   PAUSED: "paused",
   GAMEOVER: "gameover",
@@ -300,6 +299,35 @@ let backgroundBubbleTimer = 0;
 
 let lastTimestamp = 0;
 let globalTime = 0;
+
+// TRANSISI MASUK MAP
+const mapTransition = {
+  active: false,
+  time: 0,
+  duration: 2.2, // durasi transisi (detik)
+};
+
+function startMapTransition() {
+  mapTransition.active = true;
+  mapTransition.time = 0;
+  setState(STATE.TRANSITION);
+}
+
+function updateMapTransition(dt) {
+  if (!mapTransition.active) return;
+  mapTransition.time += dt;
+  if (mapTransition.time >= mapTransition.duration) {
+    mapTransition.time = mapTransition.duration;
+    mapTransition.active = false;
+    setState(STATE.PLAYING);
+  }
+}
+
+function getTransitionProgress() {
+  if (!mapTransition.active && currentState !== STATE.TRANSITION) return 1;
+  if (mapTransition.duration <= 0) return 1;
+  return Math.min(1, mapTransition.time / mapTransition.duration);
+}
 
 // Joystick analog
 const joystick = {
@@ -373,9 +401,7 @@ window.addEventListener(
 
     if (key === " " && currentState === STATE.MENU) {
       e.preventDefault();
-      resetGame();
-      setState(STATE.PLAYING);
-      playBgMusic();
+      startRun();
     }
 
     if (key === "j") {
@@ -523,22 +549,29 @@ function bindMobileButton(btn, handler) {
   });
 }
 
+// ================== START RUN HELPER ==================
+function startRun() {
+  resetGame();
+  initBackground(); // randomisasi dekor baru
+  startMapTransition();
+  playBgMusic();
+}
+
 // ================== UI BUTTON EVENTS ==================
 if (startBtn) {
   startBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    resetGame();
-    setState(STATE.PLAYING);
-    playBgMusic();
+    startRun();
   });
 }
 
+// 🔴 PERUBAHAN DI SINI: retry sekarang BALIK KE MENU, bukan langsung startRun()
 if (retryBtn) {
   retryBtn.addEventListener("click", (e) => {
     e.preventDefault();
-    resetGame();
-    setState(STATE.PLAYING);
-    playBgMusic();
+    resetGame();        // reset status game
+    setState(STATE.MENU); // kembali ke menu → bisa pilih map & skin lagi
+    // musik sudah di-stop saat gameOver(), jadi di sini tidak perlu apa-apa
   });
 }
 
@@ -605,6 +638,7 @@ function updatePanels() {
     gameOverPanel.classList.add("hidden");
     pausePanel.classList.remove("hidden");
   } else {
+    // PLAYING & TRANSITION -> panel hilang
     menuPanel.classList.add("hidden");
     gameOverPanel.classList.add("hidden");
     pausePanel.classList.add("hidden");
@@ -1288,16 +1322,30 @@ function update(dt) {
   globalTime += dt;
 
   const slowMul = skills.slow.active ? 0.4 : 1;
-  const worldDt = dt * slowMul;
+  let worldDt = dt * slowMul;
+
+  // kalau sedang transisi, update timer transisi & pelankan gerakan background
+  if (currentState === STATE.TRANSITION) {
+    updateMapTransition(dt);
+    worldDt *= 0.4;
+  }
 
   updateBackground(worldDt);
 
   if (currentState === STATE.PLAYING) {
     updateGame(dt, worldDt);
   } else if (currentState === STATE.MENU) {
+    // ikan idle di menu
     const centerY = canvas.height / 2;
     player.x = canvas.width * 0.25 + Math.sin(globalTime) * 10;
     player.y = centerY + Math.sin(globalTime * 1.5) * 15;
+  } else if (currentState === STATE.TRANSITION) {
+    // ikan pelan2 nongol di posisi main, cuma goyang dikit
+    const centerY = canvas.height / 2;
+    player.x = canvas.width * 0.25;
+    player.y = centerY + Math.sin(globalTime * 1.5) * 10;
+    player.vx = 0;
+    player.vy = 0;
   }
 
   updateBubbles(worldDt);
@@ -1318,7 +1366,7 @@ function gameLoop(timestamp) {
 function drawBackground() {
   const m = currentMap || maps[0];
 
-  // gradient laut
+  // gradient laut (atas)
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
   if (m.gradientStops && m.gradientStops.length) {
     for (const stop of m.gradientStops) {
@@ -1381,6 +1429,17 @@ function drawBackground() {
     ctx.stroke();
   }
   ctx.restore();
+
+  // OFFSET TRANSISI (bawah dunia naik dari bawah)
+  let bottomOffsetY = 0;
+  if (currentState === STATE.TRANSITION) {
+    const p = getTransitionProgress(); // 0 -> 1
+    bottomOffsetY = (1 - p) * canvas.height * 0.6; // awalnya di bawah, naik ke posisi normal
+  }
+
+  // semua objek bawah laut kita translate dengan offset ini
+  ctx.save();
+  ctx.translate(0, bottomOffsetY);
 
   // dasar laut
   ctx.save();
@@ -1545,6 +1604,8 @@ function drawBackground() {
     ctx.fill();
   }
   ctx.restore();
+
+  ctx.restore(); // end translate bottomOffsetY
 }
 
 // bangkai kapal: hull / mast / anchor
@@ -1564,7 +1625,6 @@ function drawShipWrecks(map) {
     const h = s.height;
 
     if (s.variant === "hull") {
-      // badan kapal patah
       ctx.fillStyle = wood;
       ctx.beginPath();
       ctx.moveTo(-w * 0.5, 0);
@@ -1585,7 +1645,6 @@ function drawShipWrecks(map) {
         ctx.stroke();
       }
     } else if (s.variant === "mast") {
-      // tiang kapal
       ctx.fillStyle = wood;
       ctx.fillRect(-w * 0.04, -h, w * 0.08, h);
 
@@ -1604,7 +1663,6 @@ function drawShipWrecks(map) {
       ctx.lineTo(0, h * 0.1);
       ctx.stroke();
     } else {
-      // jangkar sederhana
       ctx.strokeStyle = metal;
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -1650,7 +1708,6 @@ function drawRuins(map) {
     const w = r.width;
 
     if (r.type === "pillar") {
-      // pilar tegak
       ctx.fillStyle = colMain;
       ctx.fillRect(-w / 2, -h, w, h);
 
@@ -1667,7 +1724,6 @@ function drawRuins(map) {
         ctx.restore();
       }
 
-      // kristal kecil di bawah
       ctx.fillStyle = crystalColor;
       ctx.globalAlpha = 0.7;
       ctx.beginPath();
@@ -1678,7 +1734,6 @@ function drawRuins(map) {
       ctx.fill();
       ctx.globalAlpha = 1;
     } else {
-      // gerbang / arch
       ctx.fillStyle = colMain;
       const archW = w * 2;
       const archH = h;
@@ -1695,7 +1750,6 @@ function drawRuins(map) {
       ctx.closePath();
       ctx.fill();
 
-      // highlight garis
       ctx.strokeStyle = colHigh;
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -1708,7 +1762,6 @@ function drawRuins(map) {
       );
       ctx.stroke();
 
-      // pecahan di samping
       if (r.broken) {
         ctx.fillStyle = colMain;
         ctx.beginPath();
@@ -1726,7 +1779,6 @@ function drawRuins(map) {
         ctx.fill();
       }
 
-      // kristal di tengah
       ctx.fillStyle = crystalColor;
       ctx.globalAlpha = 0.8;
       ctx.beginPath();
@@ -1920,6 +1972,41 @@ function render() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
   }
+
+  // overlay transisi: fade dari hitam + teks "Menyelam ke ..."
+  if (currentState === STATE.TRANSITION) {
+    const p = getTransitionProgress();
+
+    // fade hitam di awal
+    const fadeAlpha = Math.max(0, 1 - p * 1.5);
+    if (fadeAlpha > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = fadeAlpha;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    // teks info map
+    let textAlpha;
+    if (p < 0.4) textAlpha = p / 0.4; // fade in
+    else if (p < 0.8) textAlpha = 1 - (p - 0.4) / 0.4; // fade out
+    else textAlpha = 0;
+
+    if (textAlpha > 0.02) {
+      ctx.save();
+      ctx.globalAlpha = textAlpha;
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "28px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        `Menyelam ke ${currentMap.name}...`,
+        canvas.width / 2,
+        canvas.height / 2
+      );
+      ctx.restore();
+    }
+  }
 }
 
 // ================== INIT ==================
@@ -1927,7 +2014,7 @@ function initGame() {
   applyCurrentSkin();
   bindSkinButtons();
   bindMapButtons();
-  applyCurrentMap(); // set map + dekorasi
+  applyCurrentMap(); // set map + dekorasi awal
 
   updatePanels();
   updateHealthBar();
