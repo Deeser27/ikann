@@ -24,8 +24,7 @@ const muteBtn = document.getElementById("muteBtn");
 const mobilePauseBtn = document.getElementById("mobilePauseBtn");
 const joystickBase = document.getElementById("joystickBase");
 const joystickKnob = document.getElementById("joystickKnob");
-// skillDash di HTML sekarang kita pakai untuk skill HELP
-const skillDashBtn = document.getElementById("skillDash");
+const skillDashBtn = document.getElementById("skillDash"); // Help
 const skillShieldBtn = document.getElementById("skillShield");
 const skillSlowBtn = document.getElementById("skillSlow");
 
@@ -109,29 +108,31 @@ const maps = [
     name: "Kuburan Kapal",
     gradientStops: [
       { pos: 0.0, color: "#001219" },
-      { pos: 0.3, color: "#003049" },
-      { pos: 0.7, color: "#001b2a" },
+      { pos: 0.25, color: "#00263f" },
+      { pos: 0.6, color: "#001b2a" },
       { pos: 1.0, color: "#000814" },
     ],
     floorColor: "#000814",
     rockColor: "#00111a",
     kelpColor: "rgba(46, 125, 50, 0.9)",
     kelpHeadColor: "rgba(165, 214, 167, 0.95)",
-    causticAlpha: 0.03,
+    causticAlpha: 0.04,
     causticColor: "rgba(200,220,255,0.5)",
     coralPalettes: [
       { main: "#6d4c41", edge: "#a1887f" },
       { main: "#5d4037", edge: "#8d6e63" },
     ],
-    coralCount: 6,
-    sandDecorCount: 6,
+    coralCount: 7,
+    sandDecorCount: 7,
     distantFishColor: "#90caf9",
     distantFishAlpha: 0.25,
     shipWoodColor: "#5d4037",
     shipWoodHighlightColor: "#8d6e63",
     shipMetalColor: "#90a4ae",
-    shipWreckCount: 6,
+    shipWreckCount: 7,
     ruinCount: 0,
+    backCliffColor: "#000910",
+    backDetailColor: "#002033",
   },
   {
     id: "atlantis",
@@ -152,15 +153,17 @@ const maps = [
       { main: "#4db6ac", edge: "#b2dfdb" },
       { main: "#81d4fa", edge: "#b3e5fc" },
     ],
-    coralCount: 8,
-    sandDecorCount: 10,
+    coralCount: 10,
+    sandDecorCount: 12,
     distantFishColor: "#e0f7fa",
     distantFishAlpha: 0.45,
     ruinMainColor: "#cfd8dc",
     ruinHighlightColor: "#eceff1",
     crystalColor: "#80deea",
     shipWreckCount: 0,
-    ruinCount: 8,
+    ruinCount: 10,
+    backCliffColor: "#001321",
+    backDetailColor: "#00344d",
   },
   {
     id: "reef",
@@ -183,12 +186,14 @@ const maps = [
       { main: "#ffb74d", edge: "#ffe0b2" },
       { main: "#4dd0e1", edge: "#b2ebf2" },
     ],
-    coralCount: 16,
-    sandDecorCount: 16,
+    coralCount: 18,
+    sandDecorCount: 18,
     distantFishColor: "#e1f5fe",
     distantFishAlpha: 0.5,
     shipWreckCount: 0,
     ruinCount: 0,
+    backCliffColor: "#1a0628",
+    backDetailColor: "#2b1040",
   },
 ];
 
@@ -230,7 +235,7 @@ function bindMapButtons() {
   }
 }
 
-// ================== ENVIRONMENT VARIANTS (CUACA) ==================
+// ================== ENVIRONMENT (CUACA + TRANSISI HALUS) ==================
 const envVariants = [
   {
     id: "clear",
@@ -262,9 +267,76 @@ const envVariants = [
   },
 ];
 
+function parseRgba(colorStr) {
+  if (!colorStr) {
+    return { r: 0, g: 0, b: 0, a: 0 };
+  }
+  const m = colorStr.match(
+    /rgba?\(\s*([\d.]+)[^,]*,\s*([\d.]+)[^,]*,\s*([\d.]+)[^,]*(?:,\s*([\d.]+))?\s*\)/i
+  );
+  if (!m) {
+    return { r: 0, g: 0, b: 0, a: 0 };
+  }
+  return {
+    r: parseFloat(m[1]),
+    g: parseFloat(m[2]),
+    b: parseFloat(m[3]),
+    a: m[4] !== undefined ? parseFloat(m[4]) : 1,
+  };
+}
+
 let currentEnvIndex = 0;
-let currentEnv = envVariants[0];
-let nextEnvChangeScore = 1500; // cuaca ganti tiap 1500 poin
+let envCurrentId = envVariants[0].id;
+
+const initialTint = parseRgba(envVariants[0].tint || "rgba(0,0,0,0)");
+const envVisual = {
+  rayAlpha: envVariants[0].rayAlpha,
+  causticMul: envVariants[0].causticMul,
+  tintR: initialTint.r,
+  tintG: initialTint.g,
+  tintB: initialTint.b,
+  tintA: initialTint.a,
+};
+
+const envTransitionState = {
+  active: false,
+  time: 0,
+  duration: 3,
+  start: null,
+  target: null,
+};
+
+function startEnvTransitionTo(index) {
+  const variant = envVariants[index];
+  if (!variant) return;
+
+  const tintParsed = parseRgba(variant.tint || "rgba(0,0,0,0)");
+
+  envTransitionState.active = true;
+  envTransitionState.time = 0;
+  envTransitionState.duration = 3;
+  envTransitionState.start = {
+    rayAlpha: envVisual.rayAlpha,
+    causticMul: envVisual.causticMul,
+    tintR: envVisual.tintR,
+    tintG: envVisual.tintG,
+    tintB: envVisual.tintB,
+    tintA: envVisual.tintA,
+  };
+  envTransitionState.target = {
+    rayAlpha: variant.rayAlpha,
+    causticMul: variant.causticMul,
+    tintR: tintParsed.r,
+    tintG: tintParsed.g,
+    tintB: tintParsed.b,
+    tintA: tintParsed.a,
+  };
+
+  currentEnvIndex = index;
+  envCurrentId = variant.id;
+}
+
+let nextEnvChangeScore = 1500;
 
 function setRandomEnvironment() {
   if (!envVariants.length) return;
@@ -276,9 +348,7 @@ function setRandomEnvironment() {
       tries++;
     }
   }
-  currentEnvIndex = newIndex;
-  currentEnv = envVariants[currentEnvIndex];
-  // Tidak ada pesan "Cuaca berubah" lagi, biar teks tidak numpuk.
+  startEnvTransitionTo(newIndex);
 }
 
 function updateEnvByScore() {
@@ -286,6 +356,29 @@ function updateEnvByScore() {
   while (s >= nextEnvChangeScore) {
     setRandomEnvironment();
     nextEnvChangeScore += 1500;
+  }
+}
+
+function updateEnvTransition(dt) {
+  if (!envTransitionState.active) return;
+
+  envTransitionState.time += dt;
+  const rawT = envTransitionState.time / envTransitionState.duration;
+  const t = rawT >= 1 ? 1 : rawT;
+
+  const s = envTransitionState.start;
+  const tg = envTransitionState.target;
+  const lerp = (a, b, t2) => a + (b - a) * t2;
+
+  envVisual.rayAlpha = lerp(s.rayAlpha, tg.rayAlpha, t);
+  envVisual.causticMul = lerp(s.causticMul, tg.causticMul, t);
+  envVisual.tintR = lerp(s.tintR, tg.tintR, t);
+  envVisual.tintG = lerp(s.tintG, tg.tintG, t);
+  envVisual.tintB = lerp(s.tintB, tg.tintB, t);
+  envVisual.tintA = lerp(s.tintA, tg.tintA, t);
+
+  if (rawT >= 1) {
+    envTransitionState.active = false;
   }
 }
 
@@ -427,7 +520,7 @@ const joystick = {
 
 // Skill system (Help, Shield, Slow)
 const skills = {
-  help: { cooldown: 30, timer: 0 }, // cooldown 30 detik
+  help: { cooldown: 30, timer: 0 }, // HELP cooldown 30 detik
   shield: { cooldown: 10, timer: 0, active: false, duration: 3, remaining: 0 },
   slow: { cooldown: 12, timer: 0, active: false, duration: 3, remaining: 0 },
 };
@@ -481,6 +574,14 @@ const corals = [];
 const sandDecor = [];
 const shipWrecks = [];
 const ruins = [];
+
+// NPC Laut lucu
+const seaNPCs = [];
+let seaNPCTimer = 0;
+let nextSeaNPCTime = 10;
+
+// Parallax background jauh
+let parallaxFar = 0;
 
 // Sidekick (teman ikan kecil)
 const sidekick = {
@@ -692,7 +793,7 @@ function bindMobileButton(btn, handler) {
 // ================== START RUN ==================
 function startRun() {
   resetGame();
-  setRandomEnvironment(); // tidak ada pesan
+  setRandomEnvironment();
   initBackground();
   startMapTransition();
   playBgMusic();
@@ -824,6 +925,7 @@ function resetGame() {
   hazards.length = 0;
   chests.length = 0;
   bubbles.length = 0;
+  seaNPCs.length = 0;
 
   elapsed = 0;
   distance = 0;
@@ -860,7 +962,12 @@ function resetGame() {
   chestTimer = 0;
   nextChestTime = 16;
 
-  nextEnvChangeScore = 1500; // cuaca mulai di 1500
+  seaNPCTimer = 0;
+  nextSeaNPCTime = 10 + Math.random() * 10;
+
+  parallaxFar = 0;
+
+  nextEnvChangeScore = 1500;
 
   scoreEl.textContent = "0";
   levelEl.textContent = "1";
@@ -1058,7 +1165,8 @@ function initBackground() {
     });
   }
 
-  for (let i = 0; i < 10; i++) {
+  const distantCount = currentMap.id === "reef" ? 16 : 12;
+  for (let i = 0; i < distantCount; i++) {
     distantFish.push({
       x: Math.random() * canvas.width,
       y: 40 + Math.random() * (canvas.height * 0.4),
@@ -1148,6 +1256,11 @@ function createRock(x) {
 }
 
 function updateBackground(dt) {
+  // Parallax jauh
+  const span = canvas.width + 400;
+  parallaxFar -= worldSpeed * 0.05 * dt;
+  if (parallaxFar < -span) parallaxFar += span;
+
   for (const rock of bgRocks) {
     rock.x -= worldSpeed * rock.speedFactor * dt;
     if (rock.x + rock.width < -60) {
@@ -1225,6 +1338,209 @@ function updateBackground(dt) {
   }
 }
 
+// ================== NPC LAUT LUCU ==================
+function spawnSeaNPC() {
+  const r = Math.random();
+
+  // Penyu
+  if (r < 0.4) {
+    seaNPCs.push({
+      type: "turtle",
+      x: canvas.width + 80,
+      y: canvas.height * (0.4 + Math.random() * 0.25),
+      vx: -(worldSpeed * 0.45 + 40),
+      wobbleSeed: Math.random() * Math.PI * 2,
+      scale: 0.8 + Math.random() * 0.4,
+    });
+  }
+  // Kepiting di dasar
+  else if (r < 0.75) {
+    seaNPCs.push({
+      type: "crab",
+      x: canvas.width + 80,
+      y: canvas.height - 45,
+      vx: -(worldSpeed * 0.55 + 60),
+      wobbleSeed: Math.random() * Math.PI * 2,
+      scale: 0.7 + Math.random() * 0.3,
+    });
+  }
+  // Lumba-lumba lompat
+  else {
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const startX = dir === 1 ? -120 : canvas.width + 120;
+    seaNPCs.push({
+      type: "dolphin",
+      startX,
+      x: startX,
+      baseY: canvas.height * (0.35 + Math.random() * 0.2),
+      t: 0,
+      dir,
+      speed: worldSpeed * 0.7 + 80,
+      jumpHeight: canvas.height * 0.15,
+      scale: 0.9 + Math.random() * 0.2,
+    });
+  }
+}
+
+function updateSeaNPCs(dt) {
+  for (let i = seaNPCs.length - 1; i >= 0; i--) {
+    const n = seaNPCs[i];
+
+    if (n.type === "turtle") {
+      n.x += n.vx * dt;
+      n.y += Math.sin(globalTime * 1.3 + n.wobbleSeed) * 8 * dt;
+      if (n.x < -150) seaNPCs.splice(i, 1);
+    } else if (n.type === "crab") {
+      n.x += n.vx * dt;
+      n.y += Math.sin(globalTime * 3 + n.wobbleSeed) * 2 * dt * 60;
+      if (n.x < -150) seaNPCs.splice(i, 1);
+    } else if (n.type === "dolphin") {
+      n.t += dt;
+      n.x = n.startX + n.dir * n.speed * n.t;
+      n.y =
+        n.baseY -
+        Math.sin(n.t * 3) * n.jumpHeight -
+        Math.cos(n.t * 2) * 5;
+
+      if (
+        (n.dir === 1 && n.x > canvas.width + 160) ||
+        (n.dir === -1 && n.x < -160)
+      ) {
+        seaNPCs.splice(i, 1);
+      }
+    }
+  }
+}
+
+function drawSeaNPCs() {
+  ctx.save();
+
+  for (const n of seaNPCs) {
+    ctx.save();
+    ctx.translate(n.x, n.y);
+    ctx.scale(n.scale || 1, n.scale || 1);
+
+    if (n.type === "turtle") {
+      // Penyu
+      ctx.save();
+      const shellGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 26);
+      shellGrad.addColorStop(0, "#a5d6a7");
+      shellGrad.addColorStop(1, "#2e7d32");
+      ctx.fillStyle = shellGrad;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 26, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#66bb6a";
+      ctx.beginPath();
+      ctx.ellipse(28, 0, 9, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#81c784";
+      ctx.beginPath();
+      ctx.ellipse(-12, 14, 8, 5, 0.4, 0, Math.PI * 2);
+      ctx.ellipse(12, 14, 8, 5, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(-12, -14, 8, 5, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(12, -14, 8, 5, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(31, -2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(31, -2, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    } else if (n.type === "crab") {
+      // Kepiting
+      ctx.save();
+      ctx.fillStyle = "#ef5350";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#e57373";
+      ctx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) {
+        const side = i < 0 ? -1 : 1;
+        ctx.beginPath();
+        ctx.moveTo(side * 10, 4);
+        ctx.lineTo(side * (14 + Math.abs(i) * 2), 8 + Math.abs(i) * 2);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(-12, -2);
+      ctx.lineTo(-18, -8);
+      ctx.moveTo(12, -2);
+      ctx.lineTo(18, -8);
+      ctx.stroke();
+
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(-4, -7, 2, 0, Math.PI * 2);
+      ctx.arc(4, -7, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(-4, -7, 1, 0, Math.PI * 2);
+      ctx.arc(4, -7, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    } else if (n.type === "dolphin") {
+      // Lumba-lumba
+      ctx.save();
+      const dir = n.dir || 1;
+      ctx.scale(dir, 1);
+
+      ctx.fillStyle = "#90caf9";
+      ctx.beginPath();
+      ctx.moveTo(-30, 0);
+      ctx.quadraticCurveTo(-10, -16, 18, -6);
+      ctx.quadraticCurveTo(32, -2, 40, 0);
+      ctx.quadraticCurveTo(25, 6, 0, 10);
+      ctx.quadraticCurveTo(-18, 8, -30, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-4, -4);
+      ctx.lineTo(6, -18);
+      ctx.lineTo(10, -2);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-30, 0);
+      ctx.lineTo(-40, -8);
+      ctx.lineTo(-42, 0);
+      ctx.lineTo(-40, 8);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(18, -4, 2.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(18.5, -4, 1.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+// ================== BUBBLES ==================
 function spawnBubble(x, y) {
   bubbles.push({
     x,
@@ -1462,11 +1778,10 @@ function updateHelpFish(dt) {
     helpFish.state = "exit"; // mulai naik ke atas
   }
 
-  const followOffsetX = 70;  // di samping pemain
-  const followOffsetY = -20; // sedikit di atas
+  const followOffsetX = 70;
+  const followOffsetY = -20;
 
   if (helpFish.state === "enter") {
-    // turun dari atas menuju posisi samping pemain
     const targetX = player.x + followOffsetX;
     const targetY = player.y + followOffsetY;
 
@@ -1478,14 +1793,12 @@ function updateHelpFish(dt) {
       helpFish.state = "follow";
     }
   } else if (helpFish.state === "follow") {
-    // jalan di samping pemain
     const targetX = player.x + followOffsetX;
     const targetY = player.y + followOffsetY;
 
     helpFish.x += (targetX - helpFish.x) * dt * 6;
     helpFish.y += (targetY - helpFish.y) * dt * 6;
   } else if (helpFish.state === "exit") {
-    // kembali naik ke atas
     helpFish.y -= 280 * dt;
     if (helpFish.y < -helpFish.height - 50) {
       resetHelpFish();
@@ -1493,7 +1806,7 @@ function updateHelpFish(dt) {
     }
   }
 
-  // Hancurkan obstacle di sekitar kita (sekitar ikan bantuan)
+  // Hancurkan obstacle di sekitar ikan bantuan
   const radius = Math.max(helpFish.width, helpFish.height);
   for (let i = hazards.length - 1; i >= 0; i--) {
     const h = hazards[i];
@@ -1560,7 +1873,7 @@ function spawnJellyWave() {
 
 // ================== MESSAGES ==================
 function addFloatingMessage(text) {
-  // Supaya tidak ada tulisan double, selalu hanya 1 message aktif
+  // Hindari teks dobel: hanya 1 pesan aktif
   floatingMessages.length = 0;
   floatingMessages.push({
     text,
@@ -1749,6 +2062,14 @@ function updateGame(dt, worldDt) {
     addFloatingMessage("Peti harta muncul!");
   }
 
+  // NPC Laut lucu timer
+  seaNPCTimer += dt;
+  if (seaNPCTimer >= nextSeaNPCTime) {
+    seaNPCTimer = 0;
+    nextSeaNPCTime = 10 + Math.random() * 15;
+    spawnSeaNPC();
+  }
+
   updatePlayer(dt);
   updateCoins(worldDt);
   updateHazards(worldDt);
@@ -1771,6 +2092,7 @@ function updateGame(dt, worldDt) {
 function update(dt) {
   globalTime += dt;
   updateFrenzy(dt);
+  updateEnvTransition(dt);
 
   const slowMul = skills.slow.active ? 0.4 : 1;
   let worldDt = dt * slowMul;
@@ -1781,6 +2103,7 @@ function update(dt) {
   }
 
   updateBackground(worldDt);
+  updateSeaNPCs(worldDt);
 
   if (currentState === STATE.PLAYING) {
     updateGame(dt, worldDt);
@@ -1812,6 +2135,95 @@ function gameLoop(timestamp) {
 }
 
 // ================== RENDER ==================
+function drawFarBackdrop() {
+  const m = currentMap || maps[0];
+  const span = canvas.width + 400;
+
+  ctx.save();
+
+  for (let k = -1; k <= 1; k++) {
+    const offsetX = parallaxFar + k * span;
+
+    ctx.save();
+    ctx.translate(offsetX, 0);
+
+    const cliffColor = m.backCliffColor || "rgba(0,0,0,0.5)";
+    const detailColor = m.backDetailColor || cliffColor;
+
+    const baseY =
+      m.id === "reef"
+        ? canvas.height * 0.6
+        : m.id === "atlantis"
+        ? canvas.height * 0.55
+        : canvas.height * 0.58;
+
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = cliffColor;
+    ctx.beginPath();
+    ctx.moveTo(-400, canvas.height);
+    ctx.quadraticCurveTo(-260, baseY - 110, -80, baseY - 40);
+    ctx.quadraticCurveTo(60, baseY - 90, 230, baseY - 20);
+    ctx.quadraticCurveTo(380, baseY - 60, 420, baseY + 40);
+    ctx.lineTo(420, canvas.height);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = detailColor;
+    ctx.beginPath();
+    if (m.id === "atlantis") {
+      ctx.moveTo(-220, canvas.height);
+      ctx.lineTo(-200, baseY - 10);
+      ctx.lineTo(-160, baseY - 140);
+      ctx.lineTo(-120, baseY - 10);
+      ctx.lineTo(-100, canvas.height);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(110, canvas.height);
+      ctx.lineTo(130, baseY - 20);
+      ctx.lineTo(170, baseY - 160);
+      ctx.lineTo(210, baseY - 20);
+      ctx.lineTo(230, canvas.height);
+      ctx.closePath();
+      ctx.fill();
+    } else if (m.id === "ship") {
+      ctx.moveTo(-260, canvas.height - 10);
+      ctx.quadraticCurveTo(
+        -190,
+        baseY - 70,
+        -80,
+        baseY - 30
+      );
+      ctx.lineTo(-40, canvas.height - 5);
+      ctx.closePath();
+      ctx.fill();
+    } else if (m.id === "reef") {
+      ctx.moveTo(-260, canvas.height);
+      ctx.quadraticCurveTo(
+        -200,
+        baseY - 60,
+        -130,
+        baseY - 10
+      );
+      ctx.quadraticCurveTo(
+        -70,
+        baseY - 50,
+        -10,
+        baseY - 5
+      );
+      ctx.lineTo(40, canvas.height);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
 function drawBackground() {
   const m = currentMap || maps[0];
 
@@ -1839,9 +2251,12 @@ function drawBackground() {
   ctx.fillRect(0, 0, canvas.width, 90);
   ctx.restore();
 
+  // Far backdrop (tebing/karang jauh)
+  drawFarBackdrop();
+
   // sun rays (dipengaruhi env)
   ctx.save();
-  ctx.globalAlpha = currentEnv.rayAlpha;
+  ctx.globalAlpha = envVisual.rayAlpha;
   ctx.fillStyle = "#ffffff";
   for (let i = 0; i < 4; i++) {
     const offset =
@@ -1858,7 +2273,7 @@ function drawBackground() {
 
   // caustic light
   const mCa = m.causticAlpha ?? 0.07;
-  const caAlpha = mCa * (currentEnv.causticMul || 1);
+  const caAlpha = mCa * (envVisual.causticMul || 1);
   const caColor = m.causticColor ?? "rgba(255,255,255,0.6)";
   ctx.save();
   ctx.globalAlpha = caAlpha;
@@ -1888,11 +2303,21 @@ function drawBackground() {
   ctx.save();
   ctx.translate(0, bottomOffsetY);
 
+  // dasar laut (sedikit gradiasi biar lebih lembut)
   ctx.save();
-  ctx.fillStyle = m.floorColor || "#00111b";
-  ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+  const floorGrad = ctx.createLinearGradient(
+    0,
+    canvas.height - 120,
+    0,
+    canvas.height
+  );
+  floorGrad.addColorStop(0, `${m.floorColor || "#00111b"}00`);
+  floorGrad.addColorStop(0.4, `${m.floorColor || "#00111b"}ff`);
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, canvas.height - 120, canvas.width, 120);
   ctx.restore();
 
+  // batu besar
   ctx.save();
   ctx.fillStyle = m.rockColor || "#001b2e";
   for (const rock of bgRocks) {
@@ -1952,6 +2377,28 @@ function drawBackground() {
     );
     ctx.closePath();
     ctx.fill();
+
+    // highlight tip biolum untuk reef/atlantis
+    if (currentMap.id === "reef" || currentMap.id === "atlantis") {
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      const glowR = Math.max(10, h * 0.25);
+      const gx = x + sway * 1.0;
+      const gy = yBase - h * 0.9;
+      const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, glowR);
+      if (currentMap.id === "reef") {
+        g.addColorStop(0, "rgba(255,255,255,0.9)");
+        g.addColorStop(1, "rgba(186,104,200,0)");
+      } else {
+        g.addColorStop(0, "rgba(224,247,250,0.9)");
+        g.addColorStop(1, "rgba(128,222,234,0)");
+      }
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(gx, gy, glowR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
   ctx.restore();
 
@@ -2044,28 +2491,59 @@ function drawBackground() {
   }
   ctx.restore();
 
-  ctx.restore(); // end translate bottomOffsetY
-
-  // partikel plankton / titik cahaya untuk varian tertentu
-  if (currentEnv.id === "plankton" || currentEnv.id === "deep") {
+  // glow lembut di dasar untuk reef/atlantis
+  if (currentMap.id === "reef" || currentMap.id === "atlantis") {
     ctx.save();
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = "#e0f7fa";
-    for (let i = 0; i < 80; i++) {
+    let baseAlpha = currentMap.id === "reef" ? 0.35 : 0.28;
+    ctx.globalAlpha = baseAlpha;
+    const glowCount = 16;
+    for (let i = 0; i < glowCount; i++) {
       const x =
-        (((i * 73) + globalTime * 40) % (canvas.width + 40)) - 20;
-      const y = (i * 97) % (canvas.height + 40);
+        (((i * 173) + globalTime * 40) % (canvas.width + 120)) - 60;
+      const yBase = canvas.height - 70;
+      const y = yBase + Math.sin(globalTime * 0.8 + i) * 10;
+      const r = 16;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      if (currentMap.id === "reef") {
+        g.addColorStop(0, "rgba(255,255,255,0.9)");
+        g.addColorStop(1, "rgba(255,171,145,0)");
+      } else {
+        g.addColorStop(0, "rgba(224,247,250,0.9)");
+        g.addColorStop(1, "rgba(179,229,252,0)");
+      }
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
   }
 
-  // overlay tint env
-  if (currentEnv.tint) {
+  ctx.restore(); // end translate bottomOffsetY
+
+  // partikel halus di air (lebih banyak saat plankton/deep)
+  ctx.save();
+  let dustAlpha = 0.12;
+  if (envCurrentId === "plankton") dustAlpha = 0.32;
+  else if (envCurrentId === "deep") dustAlpha = 0.18;
+  ctx.globalAlpha = dustAlpha;
+  ctx.fillStyle = "#e0f7fa";
+  for (let i = 0; i < 80; i++) {
+    const x =
+      (((i * 73) + globalTime * 40) % (canvas.width + 40)) - 20;
+    const y = (i * 97) % (canvas.height + 40);
+    ctx.beginPath();
+    ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // overlay tint env (dari envVisual, smooth)
+  if (envVisual.tintA > 0.01) {
     ctx.save();
-    ctx.fillStyle = currentEnv.tint;
+    ctx.fillStyle = `rgba(${envVisual.tintR | 0},${envVisual.tintG | 0},${
+      envVisual.tintB | 0
+    },${envVisual.tintA})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
   }
@@ -2106,6 +2584,15 @@ function drawShipWrecks(map) {
         ctx.lineTo((i / 3) * w * 0.45, h * 0.1);
         ctx.stroke();
       }
+
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.1, -h * 0.55);
+      ctx.lineTo(w * 0.05, -h * 0.48);
+      ctx.lineTo(w * 0.12, -h * 0.38);
+      ctx.lineTo(-w * 0.05, -h * 0.45);
+      ctx.closePath();
+      ctx.fill();
     } else if (s.variant === "mast") {
       ctx.fillStyle = wood;
       ctx.fillRect(-w * 0.04, -h, w * 0.08, h);
@@ -2442,7 +2929,6 @@ function drawHelpFish() {
   ctx.save();
   ctx.translate(helpFish.x, helpFish.y);
 
-  // helper pakai skin kebalikan pemain
   const helperIndex = (currentSkinIndex + 1) % fishSkins.length;
   const img = skinImages[helperIndex];
   const w = helpFish.width;
@@ -2523,8 +3009,24 @@ function drawPlayer() {
   ctx.restore();
 }
 
+function drawVignetteOverlay() {
+  ctx.save();
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const maxR = Math.max(canvas.width, canvas.height) * 0.8;
+
+  const grad = ctx.createRadialGradient(cx, cy, maxR * 0.25, cx, cy, maxR);
+  grad.addColorStop(0, "rgba(0,0,0,0)");
+  grad.addColorStop(1, "rgba(0,0,0,0.35)");
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
+}
+
 function render() {
   drawBackground();
+  drawSeaNPCs();
   drawBubbles();
   drawCoins();
   drawHazards();
@@ -2582,6 +3084,9 @@ function render() {
   }
 
   drawFloatingMessages();
+
+  // Vignette halus di pinggir biar lebih sinematik/HD
+  drawVignetteOverlay();
 }
 
 // ================== INIT ==================
