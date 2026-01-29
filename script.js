@@ -3113,3 +3113,442 @@ function initGame() {
 }
 
 window.addEventListener("load", initGame);
+// ========== FITUR BARU: TAMBAHAN DI BAWAH FILE ORIGINAL ==========
+
+// High Score & Coin Counter Elements (yang baru di HTML)
+const highScoreEl = document.getElementById("highScoreValue");
+const coinCountEl = document.getElementById("coinCount");
+const energyBarInner = document.getElementById("energyBarInner");
+const energyText = document.getElementById("energyText");
+
+// New Panels
+const settingsPanel = document.getElementById("settingsPanel");
+const tutorialPanel = document.getElementById("tutorialPanel");
+const leaderboardPanel = document.getElementById("leaderboardPanel");
+
+// New Buttons
+const settingsBtn = document.getElementById("settingsBtn");
+const restartBtn = document.getElementById("restartBtn");
+const menuBtn = document.getElementById("menuBtn");
+const shareBtn = document.getElementById("shareBtn");
+const tutorialBtn = document.getElementById("tutorialBtn");
+const leaderboardBtn = document.getElementById("leaderboardBtn");
+const skillUltimateBtn = document.getElementById("skillUltimate");
+
+// Difficulty & Mode Selectors
+const diffPrevBtn = document.getElementById("diffPrevBtn");
+const diffNextBtn = document.getElementById("diffNextBtn");
+const diffNameEl = document.getElementById("diffName");
+const modePrevBtn = document.getElementById("modePrevBtn");
+const modeNextBtn = document.getElementById("modeNextBtn");
+const modeNameEl = document.getElementById("modeName");
+
+// Settings Controls
+const volumeSlider = document.getElementById("volumeSlider");
+const volumeValue = document.getElementById("volumeValue");
+const sfxSlider = document.getElementById("sfxSlider");
+const sfxValue = document.getElementById("sfxValue");
+const qualitySelect = document.getElementById("qualitySelect");
+const particlesCheck = document.getElementById("particlesCheck");
+const screenShakeCheck = document.getElementById("screenShakeCheck");
+const settingsCloseBtn = document.getElementById("settingsCloseBtn");
+
+// Other UI Elements
+const tutorialCloseBtn = document.getElementById("tutorialCloseBtn");
+const leaderboardCloseBtn = document.getElementById("leaderboardCloseBtn");
+const clearScoresBtn = document.getElementById("clearScoresBtn");
+const leaderboardList = document.getElementById("leaderboardList");
+const achievementNotif = document.getElementById("achievementNotif");
+const achievementText = document.getElementById("achievementText");
+const comboDisplay = document.getElementById("comboDisplay");
+const comboCount = document.getElementById("comboCount");
+
+// Game stats elements
+const statCoins = document.getElementById("statCoins");
+const statLevel = document.getElementById("statLevel");
+const statTime = document.getElementById("statTime");
+const statEnemies = document.getElementById("statEnemies");
+
+// ========== DIFFICULTY SYSTEM ==========
+const difficulties = [
+  { id: "easy", name: "Easy", damageMultiplier: 0.6, speedMultiplier: 0.8, rewardMultiplier: 0.8 },
+  { id: "normal", name: "Normal", damageMultiplier: 1.0, speedMultiplier: 1.0, rewardMultiplier: 1.0 },
+  { id: "hard", name: "Hard", damageMultiplier: 1.5, speedMultiplier: 1.3, rewardMultiplier: 1.5 },
+  { id: "extreme", name: "Extreme", damageMultiplier: 2.0, speedMultiplier: 1.6, rewardMultiplier: 2.0 },
+];
+
+let currentDifficultyIndex = 1;
+let currentDifficulty = difficulties[1];
+
+function applyCurrentDifficulty() {
+  currentDifficulty = difficulties[currentDifficultyIndex] || difficulties[1];
+  if (diffNameEl) diffNameEl.textContent = currentDifficulty.name;
+}
+
+function changeDifficulty(delta) {
+  const len = difficulties.length;
+  currentDifficultyIndex = (currentDifficultyIndex + delta + len) % len;
+  applyCurrentDifficulty();
+}
+
+if (diffPrevBtn && diffNextBtn) {
+  diffPrevBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    changeDifficulty(-1);
+  }, { passive: false });
+  
+  diffNextBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    changeDifficulty(1);
+  }, { passive: false });
+  
+  applyCurrentDifficulty();
+}
+
+// ========== GAME MODE SYSTEM ==========
+const gameModes = [
+  { id: "classic", name: "Classic" },
+  { id: "timeattack", name: "Time Attack" },
+  { id: "survival", name: "Survival" },
+  { id: "bossrush", name: "Boss Rush" },
+];
+
+let currentModeIndex = 0;
+let currentGameMode = gameModes[0];
+
+function applyCurrentMode() {
+  currentGameMode = gameModes[currentModeIndex] || gameModes[0];
+  if (modeNameEl) modeNameEl.textContent = currentGameMode.name;
+}
+
+function changeMode(delta) {
+  const len = gameModes.length;
+  currentModeIndex = (currentModeIndex + delta + len) % len;
+  applyCurrentMode();
+}
+
+if (modePrevBtn && modeNextBtn) {
+  modePrevBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    changeMode(-1);
+  }, { passive: false });
+  
+  modeNextBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    changeMode(1);
+  }, { passive: false });
+  
+  applyCurrentMode();
+}
+
+// ========== SETTINGS SYSTEM ==========
+const gameSettings = {
+  musicVolume: 0.35,
+  sfxVolume: 0.7,
+  quality: "medium",
+  particles: true,
+  screenShake: true,
+};
+
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem("ninufishSettings");
+    if (saved) {
+      const settings = JSON.parse(saved);
+      Object.assign(gameSettings, settings);
+      applySettings();
+    }
+  } catch (e) {}
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem("ninufishSettings", JSON.stringify(gameSettings));
+  } catch (e) {}
+}
+
+function applySettings() {
+  if (bgMusic) bgMusic.volume = gameSettings.musicVolume;
+  
+  if (volumeSlider) volumeSlider.value = Math.round(gameSettings.musicVolume * 100);
+  if (volumeValue) volumeValue.textContent = `${Math.round(gameSettings.musicVolume * 100)}%`;
+  if (sfxSlider) sfxSlider.value = Math.round(gameSettings.sfxVolume * 100);
+  if (sfxValue) sfxValue.textContent = `${Math.round(gameSettings.sfxVolume * 100)}%`;
+  if (qualitySelect) qualitySelect.value = gameSettings.quality;
+  if (particlesCheck) particlesCheck.checked = gameSettings.particles;
+  if (screenShakeCheck) screenShakeCheck.checked = gameSettings.screenShake;
+}
+
+if (volumeSlider) {
+  volumeSlider.addEventListener("input", (e) => {
+    const val = parseInt(e.target.value) / 100;
+    gameSettings.musicVolume = val;
+    if (bgMusic) bgMusic.volume = val;
+    if (volumeValue) volumeValue.textContent = `${e.target.value}%`;
+    saveSettings();
+  });
+}
+
+if (sfxSlider) {
+  sfxSlider.addEventListener("input", (e) => {
+    const val = parseInt(e.target.value) / 100;
+    gameSettings.sfxVolume = val;
+    if (sfxValue) sfxValue.textContent = `${e.target.value}%`;
+    saveSettings();
+  });
+}
+
+if (qualitySelect) {
+  qualitySelect.addEventListener("change", (e) => {
+    gameSettings.quality = e.target.value;
+    saveSettings();
+  });
+}
+
+if (particlesCheck) {
+  particlesCheck.addEventListener("change", (e) => {
+    gameSettings.particles = e.target.checked;
+    saveSettings();
+  });
+}
+
+if (screenShakeCheck) {
+  screenShakeCheck.addEventListener("change", (e) => {
+    gameSettings.screenShake = e.target.checked;
+    saveSettings();
+  });
+}
+
+if (settingsCloseBtn) {
+  settingsCloseBtn.addEventListener("click", () => {
+    if (settingsPanel) settingsPanel.classList.add("hidden");
+  });
+}
+
+// ========== HIGH SCORE SYSTEM ==========
+let highScore = 0;
+
+function loadHighScore() {
+  try {
+    const saved = localStorage.getItem("ninufishHighScore");
+    if (saved) {
+      highScore = parseInt(saved) || 0;
+      if (highScoreEl) highScoreEl.textContent = Math.floor(highScore);
+    }
+  } catch (e) {}
+}
+
+function saveHighScore() {
+  try {
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem("ninufishHighScore", Math.floor(highScore));
+      if (highScoreEl) highScoreEl.textContent = Math.floor(highScore);
+    }
+  } catch (e) {}
+}
+
+// ========== LEADERBOARD SYSTEM ==========
+function saveScore() {
+  try {
+    const leaderboard = getLeaderboard();
+    const entry = {
+      score: Math.floor(score),
+      level: level,
+      coins: coinsCollected,
+      date: new Date().toISOString(),
+    };
+    
+    leaderboard.push(entry);
+    leaderboard.sort((a, b) => b.score - a.score);
+    
+    const top10 = leaderboard.slice(0, 10);
+    localStorage.setItem("ninufishLeaderboard", JSON.stringify(top10));
+  } catch (e) {}
+}
+
+function getLeaderboard() {
+  try {
+    const saved = localStorage.getItem("ninufishLeaderboard");
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function displayLeaderboard() {
+  if (!leaderboardList) return;
+  
+  const leaderboard = getLeaderboard();
+  
+  if (leaderboard.length === 0) {
+    leaderboardList.innerHTML = '<div class="leaderboard-empty">Belum ada skor tersimpan</div>';
+    return;
+  }
+  
+  leaderboardList.innerHTML = "";
+  
+  leaderboard.forEach((entry, index) => {
+    const div = document.createElement("div");
+    div.className = "leaderboard-entry";
+    
+    if (index === 0) div.classList.add("top-1");
+    else if (index === 1) div.classList.add("top-2");
+    else if (index === 2) div.classList.add("top-3");
+    
+    const date = new Date(entry.date);
+    const dateStr = date.toLocaleDateString("id-ID", { 
+      day: "2-digit", 
+      month: "short", 
+      year: "numeric" 
+    });
+    
+    div.innerHTML = `
+      <span class="leaderboard-rank">#${index + 1}</span>
+      <div class="leaderboard-info">
+        <div class="leaderboard-score">${entry.score} pts</div>
+        <div class="leaderboard-date">${dateStr} • Lv.${entry.level}</div>
+      </div>
+    `;
+    
+    leaderboardList.appendChild(div);
+  });
+}
+
+function clearLeaderboard() {
+  if (confirm("Yakin mau hapus semua data leaderboard?")) {
+    try {
+      localStorage.removeItem("ninufishLeaderboard");
+      displayLeaderboard();
+    } catch (e) {}
+  }
+}
+
+// ========== SHARE SCORE ==========
+function shareScore() {
+  const text = `Aku baru dapat skor ${Math.floor(score)} di Ninu fishh! Bisa kalahkan ga? 🐟`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: "Ninu fishh Score",
+      text: text,
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Skor berhasil dicopy!");
+    }).catch(() => {
+      alert(`Skormu: ${Math.floor(score)} poin!`);
+    });
+  }
+}
+
+// ========== BUTTON EVENTS ==========
+if (settingsBtn) {
+  settingsBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (settingsPanel) settingsPanel.classList.remove("hidden");
+  });
+}
+
+if (restartBtn) {
+  restartBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    resetGame();
+    setRandomEnvironment();
+    initBackground();
+    startMapTransition();
+    playBgMusic();
+  });
+}
+
+if (menuBtn) {
+  menuBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    resetGame();
+    setState(STATE.MENU);
+  });
+}
+
+if (shareBtn) {
+  shareBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    shareScore();
+  });
+}
+
+if (tutorialBtn) {
+  tutorialBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (tutorialPanel) tutorialPanel.classList.remove("hidden");
+  });
+}
+
+if (tutorialCloseBtn) {
+  tutorialCloseBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (tutorialPanel) tutorialPanel.classList.add("hidden");
+  });
+}
+
+if (leaderboardBtn) {
+  leaderboardBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    displayLeaderboard();
+    if (leaderboardPanel) leaderboardPanel.classList.remove("hidden");
+  });
+}
+
+if (leaderboardCloseBtn) {
+  leaderboardCloseBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (leaderboardPanel) leaderboardPanel.classList.add("hidden");
+  });
+}
+
+if (clearScoresBtn) {
+  clearScoresBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    clearLeaderboard();
+  });
+}
+
+// ========== UPDATE EXISTING gameOver() FUNCTION ==========
+// Cari fungsi gameOver() yang sudah ada di file original, lalu tambahkan ini di dalamnya:
+// (Jangan hapus yang lama, cuma tambahkan 2 baris ini)
+const originalGameOver = window.gameOver || gameOver;
+window.gameOver = function() {
+  if (originalGameOver) originalGameOver();
+  saveHighScore();
+  saveScore();
+  
+  // Update game stats
+  if (statCoins) statCoins.textContent = coinsCollected;
+  if (statLevel) statLevel.textContent = level;
+  if (statTime) {
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = Math.floor(elapsed % 60);
+    statTime.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
+  if (statEnemies) statEnemies.textContent = "0";
+};
+
+// ========== UPDATE COIN COUNTER ==========
+setInterval(() => {
+  if (coinCountEl && typeof coinsCollected !== 'undefined') {
+    coinCountEl.textContent = coinsCollected;
+  }
+}, 100);
+
+// ========== ENERGY BAR (OPTIONAL - Jika ingin ada) ==========
+if (energyBarInner && energyText) {
+  setInterval(() => {
+    energyBarInner.style.width = "100%";
+    energyText.textContent = "100 / 100";
+  }, 100);
+}
+
+// ========== LOAD PADA STARTUP ==========
+loadSettings();
+loadHighScore();
+
+console.log("✅ Fitur baru berhasil dimuat!");
