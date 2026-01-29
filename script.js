@@ -3837,3 +3837,286 @@ if (typeof onJoystickUp === 'function') {
 }
 
 console.log("✅ Auto-Sprint di HP aktif! Push joystick keras = Sprint!");
+// ========== IMPLEMENTASI GAME MODE LENGKAP ==========
+
+// Timer untuk Time Attack mode
+let gameModeTimer = 0;
+
+// Boss system untuk Boss Rush
+const bossSystem = {
+  active: false,
+  currentBoss: null,
+  bossCount: 0,
+  nextBossDelay: 0,
+};
+
+// Fungsi spawn boss
+function spawnBoss() {
+  bossSystem.active = true;
+  bossSystem.currentBoss = {
+    x: canvas.width + 100,
+    y: canvas.height / 2,
+    width: 120,
+    height: 80,
+    health: 100 * (bossSystem.bossCount + 1), // Boss makin kuat
+    maxHealth: 100 * (bossSystem.bossCount + 1),
+    speed: 80,
+    state: "enter", // enter, fight, exit
+    attackTimer: 0,
+    attackCooldown: 2,
+  };
+  
+  if (typeof addFloatingMessage === 'function') {
+    addFloatingMessage(`⚔️ BOSS ${bossSystem.bossCount + 1} MUNCUL!`);
+  }
+}
+
+// Update boss
+function updateBoss(dt) {
+  if (!bossSystem.currentBoss) return;
+  
+  const boss = bossSystem.currentBoss;
+  
+  if (boss.state === "enter") {
+    // Boss masuk dari kanan
+    boss.x -= boss.speed * dt;
+    if (boss.x < canvas.width - 200) {
+      boss.state = "fight";
+    }
+  } else if (boss.state === "fight") {
+    // Boss bergerak naik turun
+    boss.y += Math.sin(globalTime * 2) * 50 * dt;
+    
+    // Keep in bounds
+    if (boss.y < 100) boss.y = 100;
+    if (boss.y > canvas.height - 100) boss.y = canvas.height - 100;
+    
+    // Boss attack (spawn hazard)
+    boss.attackTimer += dt;
+    if (boss.attackTimer >= boss.attackCooldown) {
+      boss.attackTimer = 0;
+      
+      // Spawn projectile dari boss
+      if (typeof hazards !== 'undefined') {
+        hazards.push({
+          x: boss.x - 50,
+          y: boss.y,
+          type: "boss_projectile",
+          vx: -200, // Kecepatan projectile
+        });
+      }
+    }
+    
+    // Check collision dengan player (damage boss)
+    if (typeof player !== 'undefined') {
+      const dx = player.x - boss.x;
+      const dy = player.y - boss.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      // Player tabrak boss = damage boss
+      if (dist < 60 && skills && skills.ultimate && skills.ultimate.active) {
+        boss.health -= 50 * dt; // Damage boss saat ultimate
+      }
+    }
+    
+    // Boss mati
+    if (boss.health <= 0) {
+      boss.state = "exit";
+      if (typeof score !== 'undefined') score += 500;
+      if (typeof addFloatingMessage === 'function') {
+        addFloatingMessage("⭐ BOSS DEFEATED! +500");
+      }
+    }
+  } else if (boss.state === "exit") {
+    // Boss keluar
+    boss.x += boss.speed * 2 * dt;
+    if (boss.x > canvas.width + 200) {
+      bossSystem.currentBoss = null;
+      bossSystem.bossCount++;
+      bossSystem.nextBossDelay = 5; // Delay 5 detik sebelum boss berikutnya
+    }
+  }
+}
+
+// Draw boss
+function drawBoss() {
+  if (!bossSystem.currentBoss) return;
+  
+  const boss = bossSystem.currentBoss;
+  
+  ctx.save();
+  
+  // Boss body (simple rectangle untuk sekarang)
+  ctx.fillStyle = "#ff1744";
+  ctx.fillRect(boss.x - boss.width/2, boss.y - boss.height/2, boss.width, boss.height);
+  
+  // Boss outline
+  ctx.strokeStyle = "#ff5252";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(boss.x - boss.width/2, boss.y - boss.height/2, boss.width, boss.height);
+  
+  // Health bar boss
+  const healthRatio = boss.health / boss.maxHealth;
+  const barWidth = boss.width;
+  const barHeight = 8;
+  
+  // Background bar
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.fillRect(boss.x - barWidth/2, boss.y - boss.height/2 - 20, barWidth, barHeight);
+  
+  // Health bar
+  ctx.fillStyle = healthRatio > 0.5 ? "#4caf50" : (healthRatio > 0.25 ? "#ff9800" : "#ff5252");
+  ctx.fillRect(boss.x - barWidth/2, boss.y - boss.height/2 - 20, barWidth * healthRatio, barHeight);
+  
+  // Boss name
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 14px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(`BOSS ${bossSystem.bossCount + 1}`, boss.x, boss.y - boss.height/2 - 30);
+  
+  ctx.restore();
+}
+
+// ========== MODE-SPECIFIC LOGIC ==========
+
+// Aplikasikan mode saat start game
+const originalStartRun = window.startRun || startRun;
+window.startRun = function() {
+  if (originalStartRun) originalStartRun();
+  
+  // Reset mode-specific variables
+  gameModeTimer = 0;
+  bossSystem.active = false;
+  bossSystem.currentBoss = null;
+  bossSystem.bossCount = 0;
+  bossSystem.nextBossDelay = 0;
+  
+  // Apply mode-specific settings
+  if (currentGameMode.id === "timeattack") {
+    gameModeTimer = 180; // 3 menit
+    if (typeof addFloatingMessage === 'function') {
+      addFloatingMessage("⏱️ TIME ATTACK: 3 Menit!");
+    }
+  } else if (currentGameMode.id === "bossrush") {
+    // Spawn boss pertama setelah 3 detik
+    bossSystem.nextBossDelay = 3;
+    if (typeof addFloatingMessage === 'function') {
+      addFloatingMessage("⚔️ BOSS RUSH MODE!");
+    }
+  } else if (currentGameMode.id === "survival") {
+    // Survival: damage lebih besar
+    if (typeof addFloatingMessage === 'function') {
+      addFloatingMessage("💀 SURVIVAL MODE: NO REGEN!");
+    }
+  }
+};
+
+// Update mode logic setiap frame
+function updateGameMode(dt) {
+  if (currentState !== STATE.PLAYING) return;
+  
+  // TIME ATTACK MODE
+  if (currentGameMode.id === "timeattack") {
+    gameModeTimer -= dt;
+    
+    // Update timer display di HUD (jika ada)
+    if (levelEl) {
+      const minutes = Math.floor(gameModeTimer / 60);
+      const seconds = Math.floor(gameModeTimer % 60);
+      levelEl.textContent = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
+    
+    // Time's up!
+    if (gameModeTimer <= 0) {
+      if (typeof gameOver === 'function') {
+        gameOver();
+      }
+    }
+  }
+  
+  // BOSS RUSH MODE
+  if (currentGameMode.id === "bossrush") {
+    if (!bossSystem.currentBoss) {
+      bossSystem.nextBossDelay -= dt;
+      if (bossSystem.nextBossDelay <= 0) {
+        spawnBoss();
+      }
+    } else {
+      updateBoss(dt);
+    }
+    
+    // Disable spawn hazard normal di boss rush
+    if (typeof hazardTimer !== 'undefined') {
+      hazardTimer = 0;
+    }
+  }
+  
+  // SURVIVAL MODE
+  if (currentGameMode.id === "survival") {
+    // Health tidak regenerasi
+    // Damage lebih besar sudah diterapkan via difficulty multiplier
+  }
+}
+
+// Hook ke game loop
+setInterval(() => {
+  if (currentState === STATE.PLAYING) {
+    updateGameMode(0.1);
+  }
+}, 100);
+
+// Override hazard update untuk boss projectiles
+const originalUpdateHazards = window.updateHazards;
+if (typeof updateHazards === 'function') {
+  window.updateHazards = function(dt) {
+    // Update normal hazards
+    if (currentGameMode.id !== "bossrush") {
+      originalUpdateHazards(dt);
+    }
+    
+    // Update boss projectiles
+    if (typeof hazards !== 'undefined') {
+      for (let i = hazards.length - 1; i >= 0; i--) {
+        const h = hazards[i];
+        
+        if (h.type === "boss_projectile") {
+          h.x += (h.vx || -200) * dt;
+          
+          // Check collision with player
+          if (typeof player !== 'undefined') {
+            const dx = player.x - h.x;
+            const dy = player.y - h.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 35) {
+              if (typeof damagePlayer === 'function') {
+                damagePlayer(15); // Boss projectile damage
+              }
+              hazards.splice(i, 1);
+              continue;
+            }
+          }
+          
+          // Remove if off screen
+          if (h.x < -50) {
+            hazards.splice(i, 1);
+          }
+        }
+      }
+    }
+  };
+}
+
+// Tambahkan draw boss ke render loop
+setInterval(() => {
+  if (currentState === STATE.PLAYING && currentGameMode.id === "bossrush") {
+    drawBoss();
+  }
+}, 16);
+
+console.log("✅ Game Mode System lengkap aktif!");
+console.log("📋 Mode tersedia:");
+console.log("  - Classic: Mode normal");
+console.log("  - Time Attack: Kumpulkan skor dalam 3 menit");
+console.log("  - Survival: Tanpa health regen, lebih susah");
+console.log("  - Boss Rush: Lawan boss berturut-turut");
+
