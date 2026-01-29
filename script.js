@@ -3552,3 +3552,288 @@ loadSettings();
 loadHighScore();
 
 console.log("✅ Fitur baru berhasil dimuat!");
+// ========== ULTIMATE SKILL SYSTEM ==========
+
+// Tambahkan skill ultimate ke sistem skill yang ada
+if (typeof skills !== 'undefined') {
+  skills.ultimate = { 
+    cooldown: 60, 
+    timer: 0, 
+    active: false, 
+    duration: 8, 
+    remaining: 0 
+  };
+}
+
+// Fungsi untuk menggunakan Ultimate
+function attemptUltimate() {
+  if (currentState !== STATE.PLAYING) return;
+  
+  // Cek apakah ultimate sudah ada di sistem
+  if (!skills.ultimate) {
+    skills.ultimate = { 
+      cooldown: 60, 
+      timer: 0, 
+      active: false, 
+      duration: 8, 
+      remaining: 0 
+    };
+  }
+  
+  // Cek cooldown
+  if (skills.ultimate.timer > 0 || skills.ultimate.active) {
+    console.log("Ultimate masih cooldown atau aktif!");
+    return;
+  }
+
+  // Aktifkan Ultimate
+  skills.ultimate.active = true;
+  skills.ultimate.remaining = skills.ultimate.duration;
+  skills.ultimate.timer = skills.ultimate.cooldown;
+
+  // Ultimate Effect: Clear semua hazard & collect semua coin
+  if (typeof hazards !== 'undefined') {
+    hazards.length = 0;
+  }
+  
+  if (typeof coins !== 'undefined') {
+    coins.forEach(coin => {
+      if (!coin.collected) {
+        const baseScore = 10;
+        if (typeof score !== 'undefined') score += baseScore;
+        if (typeof coinsCollected !== 'undefined') coinsCollected++;
+      }
+    });
+    coins.length = 0;
+  }
+  
+  // Tambah pesan
+  if (typeof addFloatingMessage === 'function') {
+    addFloatingMessage("⚡ ULTIMATE ACTIVATED! ⚡");
+  }
+  
+  // Play sound
+  if (typeof sfx !== 'undefined' && sfx.dash) {
+    playSfx(sfx.dash);
+  }
+  
+  // Flash button
+  flashSkillButton(skillUltimateBtn);
+  updateUltimateUI();
+  
+  console.log("✅ Ultimate activated!");
+}
+
+// Update UI untuk skill Ultimate
+function updateUltimateUI() {
+  if (!skillUltimateBtn || !skills.ultimate) return;
+
+  if (skills.ultimate.timer > 0) {
+    skillUltimateBtn.disabled = true;
+    skillUltimateBtn.classList.add("cooldown");
+    skillUltimateBtn.textContent = `CD ${Math.ceil(skills.ultimate.timer)}s`;
+  } else {
+    skillUltimateBtn.disabled = false;
+    skillUltimateBtn.classList.remove("cooldown");
+    skillUltimateBtn.textContent = "Ultimate (U)";
+  }
+
+  if (skills.ultimate.active) {
+    skillUltimateBtn.classList.add("active-skill");
+  } else {
+    skillUltimateBtn.classList.remove("active-skill");
+  }
+}
+
+// Update skill ultimate setiap frame
+function updateUltimateSkill(dt) {
+  if (!skills.ultimate) return;
+  
+  // Update cooldown
+  if (skills.ultimate.timer > 0) {
+    skills.ultimate.timer -= dt;
+    if (skills.ultimate.timer < 0) skills.ultimate.timer = 0;
+  }
+
+  // Update active duration
+  if (skills.ultimate.active) {
+    skills.ultimate.remaining -= dt;
+    if (skills.ultimate.remaining <= 0) {
+      skills.ultimate.active = false;
+      skills.ultimate.remaining = 0;
+    }
+  }
+
+  updateUltimateUI();
+}
+
+// Hook ke game loop yang ada
+setInterval(() => {
+  if (currentState === STATE.PLAYING) {
+    updateUltimateSkill(0.1);
+  }
+}, 100);
+
+// Event listener untuk tombol Ultimate (keyboard)
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "u") {
+    e.preventDefault();
+    attemptUltimate();
+  }
+}, { passive: false });
+
+// Event listener untuk tombol Ultimate (mobile)
+if (skillUltimateBtn) {
+  skillUltimateBtn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    attemptUltimate();
+  }, { passive: false });
+  
+  skillUltimateBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    attemptUltimate();
+  });
+  
+  console.log("✅ Tombol Ultimate berhasil di-bind!");
+}
+
+// Flash effect untuk tombol
+function flashSkillButton(btn) {
+  if (!btn) return;
+  btn.classList.add("flash");
+  setTimeout(() => btn.classList.remove("flash"), 150);
+}
+
+console.log("✅ Ultimate Skill System aktif!");
+// ========== ENERGY SYSTEM (SPRINT) ==========
+
+// Sistem Energy untuk Sprint
+const energy = {
+  current: 100,
+  max: 100,
+  regenRate: 20,        // Regenerasi per detik
+  sprintCost: 25,       // Biaya per detik saat sprint
+  isSprinting: false,
+};
+
+// Update energy setiap frame
+function updateEnergy(dt) {
+  if (currentState !== STATE.PLAYING) return;
+  
+  // Jika sprint dan masih ada energy
+  if (energy.isSprinting && energy.current > 0) {
+    energy.current -= energy.sprintCost * dt;
+    if (energy.current < 0) {
+      energy.current = 0;
+      energy.isSprinting = false; // Auto stop kalau habis
+    }
+  } 
+  // Regenerasi kalau tidak sprint
+  else if (!energy.isSprinting && energy.current < energy.max) {
+    energy.current += energy.regenRate * dt;
+    if (energy.current > energy.max) energy.current = energy.max;
+  }
+  
+  updateEnergyBar();
+}
+
+// Update tampilan bar
+function updateEnergyBar() {
+  if (!energyBarInner || !energyText) return;
+  
+  const ratio = energy.current / energy.max;
+  const clamped = Math.max(0, Math.min(1, ratio));
+  
+  energyBarInner.style.width = `${clamped * 100}%`;
+  energyText.textContent = `${Math.round(energy.current)} / ${energy.max}`;
+  
+  // Ubah warna bar berdasarkan sisa energy
+  if (ratio > 0.5) {
+    energyBarInner.style.background = "linear-gradient(90deg, #00b4d8, #48cae4)";
+  } else if (ratio > 0.25) {
+    energyBarInner.style.background = "linear-gradient(90deg, #ffa500, #ffb84d)";
+  } else {
+    energyBarInner.style.background = "linear-gradient(90deg, #ff6b6b, #ff8787)";
+  }
+}
+
+// Keyboard: Tekan SHIFT untuk sprint
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Shift" && currentState === STATE.PLAYING) {
+    if (energy.current > 5) { // Minimal energy untuk sprint
+      energy.isSprinting = true;
+    }
+    e.preventDefault();
+  }
+}, { passive: false });
+
+window.addEventListener("keyup", (e) => {
+  if (e.key === "Shift") {
+    energy.isSprinting = false;
+    e.preventDefault();
+  }
+}, { passive: false });
+
+// Hook player movement untuk sprint speed boost
+const originalPlayerAccel = player ? player.accel : 900;
+
+function applySprintBoost() {
+  if (!player) return;
+  
+  if (energy.isSprinting && energy.current > 0) {
+    // Sprint: 50% lebih cepat!
+    player.accel = originalPlayerAccel * 1.5;
+    player.maxSpeed = 260 * 1.5;
+  } else {
+    // Normal speed
+    player.accel = originalPlayerAccel;
+    player.maxSpeed = 260;
+  }
+}
+
+// Update energy setiap frame
+setInterval(() => {
+  if (currentState === STATE.PLAYING) {
+    updateEnergy(0.1);
+    applySprintBoost();
+  }
+}, 100);
+
+// Reset energy saat game restart
+const originalResetGame = window.resetGame || resetGame;
+window.resetGame = function() {
+  if (originalResetGame) originalResetGame();
+  energy.current = energy.max;
+  energy.isSprinting = false;
+  updateEnergyBar();
+};
+
+console.log("✅ Energy System (Sprint) aktif! Tekan SHIFT untuk sprint!");
+// ========== AUTO SPRINT DI HP (Joystick) ==========
+
+// Override fungsi joystick untuk auto-sprint
+const originalUpdateJoystick = updateJoystick;
+if (typeof updateJoystick === 'function') {
+  window.updateJoystick = function(e) {
+    // Panggil fungsi original
+    if (originalUpdateJoystick) originalUpdateJoystick(e);
+    
+    // Auto sprint kalau joystick strength > 80%
+    if (joystick && joystick.strength > 0.8 && energy.current > 5) {
+      energy.isSprinting = true;
+    } else if (joystick && joystick.strength <= 0.8) {
+      energy.isSprinting = false;
+    }
+  };
+}
+
+// Reset sprint saat joystick dilepas
+const originalOnJoystickUp = onJoystickUp;
+if (typeof onJoystickUp === 'function') {
+  window.onJoystickUp = function(e) {
+    if (originalOnJoystickUp) originalOnJoystickUp(e);
+    energy.isSprinting = false;
+  };
+}
+
+console.log("✅ Auto-Sprint di HP aktif! Push joystick keras = Sprint!");
