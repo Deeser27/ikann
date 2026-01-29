@@ -72,7 +72,8 @@ h1 {
   opacity: 0.75;
 }
 
-#healthBar {
+#healthBar,
+#energyBar {
   width: 200px;
   height: 14px;
   border-radius: 999px;
@@ -88,9 +89,30 @@ h1 {
   transition: width 0.2s ease-out, background 0.2s ease-out;
 }
 
-#healthText {
+/* FITUR BARU: Energy Bar Styling */
+#energyBar {
+  margin-top: 4px;
+}
+
+#energyBarInner {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #00bcd4, #03a9f4);
+  transition: width 0.2s ease-out;
+}
+
+#healthText,
+#energyText {
   font-size: 12px;
   opacity: 0.9;
+}
+
+/* FITUR BARU: High Score & Coin Count Styling */
+#highScoreValue,
+#coinCount {
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 2px 6px rgba(255, 215, 0, 0.5);
 }
 
 /* ===== BUTTON ===== */
@@ -155,6 +177,8 @@ button:disabled {
   backdrop-filter: blur(18px);
   text-align: center;
   z-index: 5;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .panel h2 {
@@ -176,6 +200,229 @@ button:disabled {
 
 .hidden {
   display: none;
+}
+
+/* FITUR BARU: Game Stats Styling */
+#gameStats {
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-row span:first-child {
+  opacity: 0.75;
+}
+
+.stat-row span:last-child {
+  font-weight: 700;
+  color: #64b5f6;
+}
+
+/* FITUR BARU: Settings Panel */
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setting-item label {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.setting-item input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.setting-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00b4d8, #48cae4);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.setting-item input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00b4d8, #48cae4);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.setting-item select {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e0f7fa;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.setting-item select option {
+  background: #001427;
+  color: #e0f7fa;
+}
+
+.checkbox-item {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #00b4d8;
+}
+
+.checkbox-item label {
+  cursor: pointer;
+  margin: 0;
+}
+
+#volumeValue,
+#sfxValue {
+  font-size: 12px;
+  opacity: 0.8;
+  text-align: right;
+}
+
+/* FITUR BARU: Tutorial Panel */
+.tutorial-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.tutorial-step {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border-left: 3px solid #00b4d8;
+}
+
+.tutorial-step h3 {
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #64b5f6;
+}
+
+.tutorial-step p {
+  font-size: 12px;
+  opacity: 0.85;
+  margin: 0;
+}
+
+/* FITUR BARU: Leaderboard Panel */
+.leaderboard-content {
+  margin: 16px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#leaderboardList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.leaderboard-entry:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(100, 181, 246, 0.3);
+}
+
+.leaderboard-entry.top-1 {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 193, 7, 0.1));
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+.leaderboard-entry.top-2 {
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.1));
+  border-color: rgba(192, 192, 192, 0.4);
+}
+
+.leaderboard-entry.top-3 {
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.15), rgba(205, 127, 50, 0.1));
+  border-color: rgba(205, 127, 50, 0.4);
+}
+
+.leaderboard-rank {
+  font-weight: 700;
+  font-size: 16px;
+  width: 30px;
+}
+
+.leaderboard-info {
+  flex: 1;
+  text-align: left;
+  margin: 0 12px;
+}
+
+.leaderboard-score {
+  font-weight: 700;
+  color: #64b5f6;
+  font-size: 14px;
+}
+
+.leaderboard-date {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+.leaderboard-empty {
+  padding: 20px;
+  opacity: 0.6;
+  font-size: 13px;
 }
 
 /* ===== KONTROL MOBILE (JOYSTICK + SKILL) ===== */
@@ -251,11 +498,28 @@ button:disabled {
   border-radius: 16px;
 }
 
+/* FITUR BARU: Ultimate Skill Button Styling */
+.ultimate-btn {
+  background: linear-gradient(135deg, #9c27b0, #e91e63);
+  box-shadow: 0 6px 15px rgba(156, 39, 176, 0.4);
+  animation: ultimatePulse 2s infinite;
+}
+
+@keyframes ultimatePulse {
+  0%, 100% {
+    box-shadow: 0 6px 15px rgba(156, 39, 176, 0.4);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(156, 39, 176, 0.7);
+  }
+}
+
 .skill-btn.cooldown {
   background: rgba(0, 0, 0, 0.6);
   color: #c3c3c3;
   opacity: 0.7;
   box-shadow: none;
+  animation: none;
 }
 
 .skill-btn.active-skill {
@@ -265,6 +529,111 @@ button:disabled {
 
 .skill-btn.flash {
   transform: scale(1.05);
+}
+
+/* FITUR BARU: Achievement Notification */
+#achievementNotif {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 999;
+  transform: translateX(120%);
+  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+#achievementNotif.show {
+  transform: translateX(0);
+}
+
+.achievement-content {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.95), rgba(255, 152, 0, 0.95));
+  padding: 14px 18px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 215, 0, 0.8);
+  min-width: 280px;
+}
+
+.achievement-content h3 {
+  font-size: 14px;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.achievement-content p {
+  font-size: 13px;
+  color: #2c2c2c;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* FITUR BARU: Combo Display */
+#comboDisplay {
+  position: fixed;
+  top: 120px;
+  right: 20px;
+  z-index: 998;
+  transform: scale(0);
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+#comboDisplay.show {
+  transform: scale(1);
+}
+
+.combo-text {
+  background: linear-gradient(135deg, rgba(233, 30, 99, 0.95), rgba(156, 39, 176, 0.95));
+  padding: 12px 20px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  text-align: center;
+}
+
+#comboCount {
+  display: block;
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+}
+
+.combo-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  opacity: 0.9;
+  margin-top: 2px;
+  letter-spacing: 2px;
+}
+
+/* ===== SKIN & MAP SELECTOR ===== */
+.skin-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px 0;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.skin-selector span {
+  min-width: 140px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.skin-btn {
+  padding: 6px 12px;
+  min-width: 40px;
+  font-size: 16px;
 }
 
 /* ===== HINT PUTAR HP ===== */
@@ -312,6 +681,29 @@ button:disabled {
   user-select: none;
 }
 
+/* ===== SCROLLBAR STYLING ===== */
+.panel::-webkit-scrollbar,
+.leaderboard-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.panel::-webkit-scrollbar-track,
+.leaderboard-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.panel::-webkit-scrollbar-thumb,
+.leaderboard-content::-webkit-scrollbar-thumb {
+  background: rgba(100, 181, 246, 0.5);
+  border-radius: 10px;
+}
+
+.panel::-webkit-scrollbar-thumb:hover,
+.leaderboard-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 181, 246, 0.7);
+}
+
 /* ===== RESPONSIVE ===== */
 
 /* Tampilkan hint putar HP hanya di HP portrait */
@@ -325,6 +717,16 @@ button:disabled {
 @media (min-width: 901px) {
   #mobileControls {
     display: none;
+  }
+  
+  #achievementNotif {
+    top: 100px;
+    right: 30px;
+  }
+  
+  #comboDisplay {
+    top: 180px;
+    right: 30px;
   }
 }
 
@@ -348,12 +750,14 @@ button:disabled {
     padding: 4px 8px;
   }
 
-  #healthBar {
+  #healthBar,
+  #energyBar {
     width: 150px;
     height: 12px;
   }
 
-  #healthText {
+  #healthText,
+  #energyText {
     font-size: 10px;
   }
 
@@ -387,6 +791,37 @@ button:disabled {
     padding: 4px 10px;
     font-size: 11px;
   }
+  
+  #achievementNotif {
+    top: 60px;
+    right: 10px;
+  }
+  
+  .achievement-content {
+    padding: 10px 14px;
+    min-width: 220px;
+  }
+  
+  .achievement-content h3 {
+    font-size: 12px;
+  }
+  
+  .achievement-content p {
+    font-size: 11px;
+  }
+  
+  #comboDisplay {
+    top: 100px;
+    right: 10px;
+  }
+  
+  #comboCount {
+    font-size: 24px;
+  }
+  
+  .combo-label {
+    font-size: 10px;
+  }
 }
 
 /* Layar sangat kecil: HUD jadi kolom */
@@ -396,7 +831,64 @@ button:disabled {
     align-items: stretch;
   }
 
-  #healthBar {
+  #healthBar,
+  #energyBar {
     width: 100%;
   }
+  
+  .panel {
+    width: 95%;
+    padding: 14px 16px;
+  }
+  
+  .panel h2 {
+    font-size: 18px;
+  }
+  
+  .panel p {
+    font-size: 12px;
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Apply animations */
+.panel {
+  animation: fadeIn 0.3s ease-out;
+}
+
+#achievementNotif.show {
+  animation: slideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+#comboDisplay.show {
+  animation: pulse 0.5s ease-out;
 }
