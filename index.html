@@ -24,6 +24,16 @@
           <span class="hud-label">Level</span>
           <span id="levelValue">1</span>
         </div>
+        <!-- FITUR BARU: High Score Display -->
+        <div class="hud-row">
+          <span class="hud-label">Best</span>
+          <span id="highScoreValue">0</span>
+        </div>
+        <!-- FITUR BARU: Coin Counter -->
+        <div class="hud-row">
+          <span class="hud-label">Koin</span>
+          <span id="coinCount">0</span>
+        </div>
       </div>
 
       <div class="hud-group">
@@ -31,11 +41,19 @@
           <div id="healthBarInner"></div>
         </div>
         <span id="healthText">100 / 100</span>
+        
+        <!-- FITUR BARU: Energy/Stamina Bar -->
+        <div id="energyBar">
+          <div id="energyBarInner"></div>
+        </div>
+        <span id="energyText">100 / 100</span>
       </div>
 
       <div class="hud-group">
         <button id="pauseBtn">Pause (P)</button>
         <button id="muteBtn">Mute Musik</button>
+        <!-- FITUR BARU: Settings Button -->
+        <button id="settingsBtn">Settings</button>
       </div>
     </div>
 
@@ -55,6 +73,8 @@
           <button class="skill-btn" id="skillDash">Dash (J)</button>
           <button class="skill-btn" id="skillShield">Shield (K)</button>
           <button class="skill-btn" id="skillSlow">Slow (L)</button>
+          <!-- FITUR BARU: Ultimate Skill Button -->
+          <button class="skill-btn ultimate-btn" id="skillUltimate">Ultimate (U)</button>
         </div>
         <button id="mobilePauseBtn">Pause</button>
       </div>
@@ -89,8 +109,25 @@
         <button id="mapNextBtn" class="skin-btn">&gt;</button>
       </div>
 
+      <!-- FITUR BARU: Difficulty Selector -->
+      <div class="skin-selector">
+        <button id="diffPrevBtn" class="skin-btn">&lt;</button>
+        <span id="diffName">Normal</span>
+        <button id="diffNextBtn" class="skin-btn">&gt;</button>
+      </div>
+
+      <!-- FITUR BARU: Game Mode Selector -->
+      <div class="skin-selector">
+        <button id="modePrevBtn" class="skin-btn">&lt;</button>
+        <span id="modeName">Classic</span>
+        <button id="modeNextBtn" class="skin-btn">&gt;</button>
+      </div>
+
       <div class="panel-actions">
         <button id="startBtn">Mulaiiii</button>
+        <!-- FITUR BARU: Tutorial & Leaderboard Buttons -->
+        <button id="tutorialBtn">Tutorial</button>
+        <button id="leaderboardBtn">Leaderboard</button>
       </div>
     </div>
 
@@ -101,8 +138,29 @@
         Skor kmu cuma <b><span id="finalScore">0</span></b><br />
         makanyaa jangan kebanyakann tidurr sya wkwkwkwkw
       </p>
+      <!-- FITUR BARU: Game Stats Display -->
+      <div id="gameStats">
+        <div class="stat-row">
+          <span>Koin dikumpulkan:</span>
+          <span id="statCoins">0</span>
+        </div>
+        <div class="stat-row">
+          <span>Level tertinggi:</span>
+          <span id="statLevel">0</span>
+        </div>
+        <div class="stat-row">
+          <span>Waktu bermain:</span>
+          <span id="statTime">0:00</span>
+        </div>
+        <div class="stat-row">
+          <span>Musuh dihancurkan:</span>
+          <span id="statEnemies">0</span>
+        </div>
+      </div>
       <div class="panel-actions">
         <button id="retryBtn">Main Lagi</button>
+        <!-- FITUR BARU: Share Score Button -->
+        <button id="shareBtn">Share Skor</button>
       </div>
     </div>
 
@@ -116,6 +174,101 @@
       </p>
       <div class="panel-actions">
         <button id="resumeBtn">Lanjut</button>
+        <!-- FITUR BARU: Restart & Menu buttons dalam Pause -->
+        <button id="restartBtn">Restart</button>
+        <button id="menuBtn">Menu Utama</button>
+      </div>
+    </div>
+
+    <!-- FITUR BARU: Settings Panel -->
+    <div id="settingsPanel" class="panel hidden">
+      <h2>Settings</h2>
+      <div class="settings-content">
+        <div class="setting-item">
+          <label for="volumeSlider">Volume Musik:</label>
+          <input type="range" id="volumeSlider" min="0" max="100" value="35" />
+          <span id="volumeValue">35%</span>
+        </div>
+        <div class="setting-item">
+          <label for="sfxSlider">Volume SFX:</label>
+          <input type="range" id="sfxSlider" min="0" max="100" value="70" />
+          <span id="sfxValue">70%</span>
+        </div>
+        <div class="setting-item">
+          <label for="qualitySelect">Kualitas Grafis:</label>
+          <select id="qualitySelect">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        <div class="setting-item checkbox-item">
+          <input type="checkbox" id="particlesCheck" checked />
+          <label for="particlesCheck">Particle Effects</label>
+        </div>
+        <div class="setting-item checkbox-item">
+          <input type="checkbox" id="screenShakeCheck" checked />
+          <label for="screenShakeCheck">Screen Shake</label>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="settingsCloseBtn">Tutup</button>
+      </div>
+    </div>
+
+    <!-- FITUR BARU: Tutorial Panel -->
+    <div id="tutorialPanel" class="panel hidden">
+      <h2>Tutorial</h2>
+      <div class="tutorial-content">
+        <div class="tutorial-step">
+          <h3>Kontrol Dasar</h3>
+          <p>Gunakan WASD atau Arrow Keys untuk bergerak. Di HP, gunakan joystick virtual.</p>
+        </div>
+        <div class="tutorial-step">
+          <h3>Skill</h3>
+          <p>J = Dash, K = Shield, L = Slow, U = Ultimate. Perhatikan cooldown!</p>
+        </div>
+        <div class="tutorial-step">
+          <h3>Power-ups</h3>
+          <p>Kumpulkan koin emas dan buka peti harta untuk bonus special!</p>
+        </div>
+        <div class="tutorial-step">
+          <h3>Tips</h3>
+          <p>Mode Frenzy memberikan 2x skor! Gunakan skill dengan bijak!</p>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="tutorialCloseBtn">Mengerti!</button>
+      </div>
+    </div>
+
+    <!-- FITUR BARU: Leaderboard Panel -->
+    <div id="leaderboardPanel" class="panel hidden">
+      <h2>Leaderboard</h2>
+      <div class="leaderboard-content">
+        <div id="leaderboardList">
+          <!-- Will be populated dynamically -->
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button id="leaderboardCloseBtn">Tutup</button>
+        <button id="clearScoresBtn">Clear Data</button>
+      </div>
+    </div>
+
+    <!-- FITUR BARU: Achievement Notification -->
+    <div id="achievementNotif" class="hidden">
+      <div class="achievement-content">
+        <h3>Achievement Unlocked!</h3>
+        <p id="achievementText"></p>
+      </div>
+    </div>
+
+    <!-- FITUR BARU: Combo Counter Display -->
+    <div id="comboDisplay" class="hidden">
+      <div class="combo-text">
+        <span id="comboCount">0</span>
+        <span class="combo-label">COMBO!</span>
       </div>
     </div>
   </div>
@@ -134,5 +287,3 @@
   <script src="script.js?v=3"></script>
 </body>
 </html>
-
-
